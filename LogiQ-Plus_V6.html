@@ -1,0 +1,2346 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Digitale Logik-Simulation</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            height: 100vh;
+            background-color: #f0f2f5;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        #sidebar {
+            width: 260px;
+            min-width: 260px;
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+            overflow-y: auto;
+            flex-shrink: 0;
+            transition: left 0.3s ease;
+        }
+
+        #sidebar h2 {
+            font-size: 1.2rem;
+            margin-top: 0;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .category-title {
+            font-size: 0.85rem;
+            color: #95a5a6;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 10px 0 5px 0;
+        }
+
+        details.component-group {
+            margin-bottom: 15px;
+        }
+        
+        summary.group-title {
+            font-size: 0.95rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+            cursor: pointer;
+            color: #ecf0f1;
+            padding: 8px 10px;
+            background: #233140;
+            border-radius: 4px;
+            list-style: none;
+            display: flex;
+            align-items: center;
+            transition: background 0.2s;
+        }
+
+        summary.group-title:hover {
+            background: #1a252f;
+        }
+
+        summary.group-title::-webkit-details-marker {
+            display: none;
+        }
+
+        summary.group-title::before {
+            content: '▶';
+            display: inline-block;
+            margin-right: 8px;
+            font-size: 0.7rem;
+            transition: transform 0.2s ease;
+        }
+
+        details.component-group[open] summary.group-title::before {
+            transform: rotate(90deg);
+        }
+
+        .group-content {
+            padding-left: 5px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .component-btn {
+            background-color: #34495e;
+            color: white;
+            border: 1px solid #4a6278;
+            padding: 10px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background 0.2s;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            font-size: 1rem;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .component-btn:hover { background-color: #415b76; }
+        .component-btn.active { background-color: #e74c3c; border-color: #c0392b; }
+        
+        .special-btn { background-color: #2980b9; border-color: #2471a3; font-weight: bold; justify-content: center;}
+        .special-btn:hover { background-color: #3498db; }
+
+        #main-area {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            min-width: 0;
+        }
+
+        #toolbar {
+            min-height: 60px;
+            height: auto;
+            background-color: white;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            padding: 10px 20px;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+            z-index: 50;
+        }
+        
+        #toolbar-left, #toolbar-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        #mobile-menu-btn {
+            display: none;
+            background-color: #34495e;
+        }
+
+        #canvas-container {
+            flex-grow: 1;
+            position: relative;
+            background-color: #ffffff;
+            background-image: radial-gradient(#ccc 1px, transparent 1px);
+            background-size: 20px 20px;
+            background-position: 0px 0px;
+            cursor: crosshair;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        #circuitCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        button.action-btn {
+            padding: 10px 15px;
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+
+        button.action-btn:hover { background-color: #219653; }
+        button.action-btn.stop { background-color: #e74c3c; }
+        button.action-btn.stop:hover { background-color: #c0392b; }
+
+        #floating-rec-btn {
+            display: none;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+            background-color: #e74c3c;
+            color: white;
+            font-size: 1.1rem;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 50px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(231, 76, 60, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); }
+        }
+        
+        .copyright {
+            margin-top: auto;
+            padding-top: 15px;
+            border-top: 1px solid #4a6278;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #95a5a6;
+        }
+
+        @media (max-width: 900px) {
+            #mobile-menu-btn { display: inline-block; }
+            #sidebar {
+                position: absolute;
+                left: -300px; 
+                height: 100vh;
+                width: 260px;
+                box-sizing: border-box;
+            }
+            #sidebar.open { left: 0; }
+        }
+
+        @media (max-width: 600px) {
+            #floating-rec-btn {
+                font-size: 0.9rem;
+                padding: 10px 16px;
+                top: 10px;
+                right: 10px;
+            }
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-box {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 8px;
+            min-width: 280px;
+            max-width: 90%;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333;
+        }
+
+        .modal-box h3 { margin-top: 0; color: #2c3e50; border-bottom: 2px solid #ecf0f1; padding-bottom: 10px; }
+        .modal-input-group { margin: 15px 0; display: flex; flex-direction: column; }
+        .modal-input-group label { margin-bottom: 5px; font-weight: bold; color: #34495e; display: flex; align-items: center; gap: 8px;}
+        .modal-input-group input[type="text"], .modal-input-group input[type="number"], .modal-input-group select {
+            padding: 8px; border: 1px solid #bdc3c7; border-radius: 4px; font-size: 1rem;
+        }
+        .modal-input-group input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+        
+        .modal-actions { margin-top: 20px; text-align: right; display: flex; justify-content: flex-end; gap: 10px; }
+        .modal-actions button { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; color: white;}
+        .btn-cancel { background: #e0e0e0; color: #333 !important; }
+        .btn-ok { background: #27ae60; }
+        .btn-copy { background: #2980b9; }
+
+        .export-btn-group { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
+        .export-btn-group button { padding: 12px; font-size: 1rem; background: #34495e; color: white; border: none; border-radius: 4px; cursor: pointer; transition: 0.2s; }
+        .export-btn-group button:hover { background: #2c3e50; }
+        
+        .help-text { font-size: 0.95rem; line-height: 1.5; color: #444; }
+        .help-text ul { padding-left: 20px; margin-top: 5px; }
+        .help-text li { margin-bottom: 5px; }
+
+        /* Diagramm Fenster */
+        .timing-wrapper { display: flex; flex-direction: row; height: 100%; min-height: 0; border-top: 1px solid #ccc; }
+        .timing-sidebar { width: 220px; min-width: 220px; flex-shrink: 0; overflow-y: auto; border-right: 1px solid #ccc; padding: 15px; background: #f8f9fa; }
+        .timing-sidebar label { cursor: pointer; display: flex; align-items: center; gap: 8px; padding: 5px; border-radius: 4px; transition: background 0.1s;}
+        .timing-sidebar label:hover { background: #ecf0f1; }
+        .timing-main { flex-grow: 1; overflow: auto; background: #ffffff; min-width: 0; position: relative; }
+        #timing-canvas { display: block; }
+        
+        @media (max-width: 768px) {
+            .timing-wrapper { flex-direction: column; }
+            .timing-sidebar { width: 100%; height: 150px; border-right: none; border-bottom: 1px solid #ccc; flex-shrink: 0; min-width: auto; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="modal-overlay" class="modal-overlay">
+        <div id="modal-box" class="modal-box">
+            <h3 id="modal-title">Einstellung</h3>
+            <div id="modal-content"></div>
+            <div class="modal-actions" id="modal-actions-container">
+                <button id="btn-cancel" class="btn-cancel">Schließen</button>
+                <button id="btn-ok" class="btn-ok">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="extract-overlay" class="modal-overlay">
+        <div class="modal-box" style="width: 95%; max-width: 1200px; height: 85vh; max-height: 85vh; display: flex; flex-direction: column; position: relative;">
+            <button onclick="document.getElementById('extract-overlay').style.display='none'" style="position: absolute; top: 15px; right: 20px; background: none; border: none; font-size: 28px; cursor: pointer; color: #7f8c8d; line-height: 1; padding: 0;">&times;</button>
+            <h3 id="extract-title" style="margin-top: 0; padding-right: 30px; flex-shrink: 0;">Diagramm</h3>
+            <div id="extract-content" style="flex-grow: 1; overflow: hidden; display: flex; flex-direction: column; min-height: 0;"></div>
+            <div class="modal-actions" style="flex-shrink: 0; margin-top: 15px;">
+                <button id="btn-extract-copy" class="btn-copy">Als Bild kopieren</button>
+                <button onclick="document.getElementById('extract-overlay').style.display='none'" class="btn-cancel">Schließen</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="sidebar">
+        <h2>Bauteile (IEC)</h2>
+        
+        <div class="category-title">Standard Bauteile</div>
+        <button class="component-btn" data-type="junction">T-Verbindung</button>
+        <button class="component-btn" data-type="taster">Input (Taster)</button>
+        <button class="component-btn" data-type="schalter">Input (Schalter)</button>
+        <button class="component-btn" data-type="output">Output (z.B. Lampe, Motor)</button>
+
+        <details class="component-group" open>
+            <summary class="group-title">Logikgatter</summary>
+            <div class="group-content">
+                <button class="component-btn" data-type="and">AND (&amp;)</button>
+                <button class="component-btn" data-type="or">OR (&ge;1)</button>
+                <button class="component-btn" data-type="nand">NAND (&amp;o)</button>
+                <button class="component-btn" data-type="nor">NOR (&ge;1o)</button>
+                <button class="component-btn" data-type="xor">XOR (=1)</button>
+                <button class="component-btn" data-type="xnor">XNOR (=1o)</button>
+                <button class="component-btn" data-type="not">NOT (1o)</button>
+            </div>
+        </details>
+
+        <details class="component-group" open>
+            <summary class="group-title">Flip-Flops & Timer</summary>
+            <div class="group-content">
+                <button class="component-btn" data-type="rs_ff">RS-Flipflop</button>
+                <button class="component-btn" data-type="mono_pos">Monoflop (Pos., 1x)</button>
+                <button class="component-btn" data-type="mono_neg">Monoflop (Neg., 1x)</button>
+                <button class="component-btn" data-type="mono_pos_retrig">Monoflop (Pos., Retrig.)</button>
+                <button class="component-btn" data-type="mono_neg_retrig">Monoflop (Neg., Retrig.)</button>
+            </div>
+        </details>
+        
+        <div style="flex-grow: 1;"></div>
+        
+        <button class="component-btn special-btn" onclick="showHelpModal()">Anleitung</button>
+        <button class="component-btn special-btn" onclick="showExportMenu()">Exportieren</button>
+        
+        <div class="copyright">
+            &copy; Johannes Lutz
+        </div>
+    </div>
+
+    <div id="main-area">
+        <div id="toolbar">
+            <div id="toolbar-left">
+                <button id="mobile-menu-btn" class="action-btn">☰ Menü</button>
+            </div>
+            <div id="toolbar-right">
+                <button id="btn-truth-table" class="action-btn" style="background-color: #8e44ad;">Wahrheitstabelle</button>
+                <button id="btn-timing" class="action-btn" style="background-color: #d35400;">Impulsdiagramm</button>
+                <div style="width: 1px; height: 30px; background-color: #ccc; margin: 0 5px;"></div>
+                <button id="clear-btn" class="action-btn" style="background-color: #7f8c8d;">Alles löschen</button>
+                <button id="sim-btn" class="action-btn">Simulation Starten</button>
+            </div>
+        </div>
+        <div id="canvas-container">
+            <canvas id="circuitCanvas"></canvas>
+            <button id="floating-rec-btn">🔴 Aufnahme starten</button>
+        </div>
+    </div>
+
+    <script>
+        // --- Einstellbare Signallaufzeiten für jedes Bauteil (in Millisekunden) ---
+        // Aufgeteilt in LH (Low-to-High) und HL (High-to-Low) Übergänge.
+        // Ein Signal muss so lange stabil anliegen, bevor das Bauteil auf den neuen Zustand (1 oder 0) schaltet.
+        // Realistische, aber flüssige Zeiten für die Simulation:
+        const DEFAULT_DELAYS = {
+            'and': { LH: 12, HL: 8 },
+            'or': { LH: 12, HL: 8 },
+            'nand': { LH: 8, HL: 12 },
+            'nor': { LH: 8, HL: 12 },
+            'xor': { LH: 15, HL: 15 },
+            'xnor': { LH: 15, HL: 15 },
+            'not': { LH: 8, HL: 12 },
+            'rs_ff': { LH: 10, HL: 10 },
+            'mono_pos': { LH: 5, HL: 5 },
+            'mono_neg': { LH: 5, HL: 5 },
+            'mono_pos_retrig': { LH: 5, HL: 5 },
+            'mono_neg_retrig': { LH: 5, HL: 5 },
+            // Hilfs- und I/O-Bauteile schalten idealerweise ohne Verzögerung
+            'junction': { LH: 0, HL: 0 }, 
+            'taster': { LH: 0, HL: 0 },   
+            'schalter': { LH: 0, HL: 0 }, 
+            'output': { LH: 0, HL: 0 },   
+            'default': { LH: 10, HL: 10 } // Fallback für unbekannte Bauteile
+        };
+
+        // --- Globale Variablen ---
+        const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+        const canvasContainer = document.getElementById('canvas-container');
+        const sidebar = document.getElementById('sidebar');
+        
+        const GRID = 20;
+        function snap(val) { return Math.round(val / GRID) * GRID; }
+        
+        let nodes = [];
+        let wires = [];
+        let nextNodeId = 1;
+        let isSimulating = false;
+        let selectedComponentToPlace = null;
+        
+        // Kamera, Panning & Zoomen
+        let cameraX = 0, cameraY = 0;
+        let cameraScale = 1.0;
+        const MIN_SCALE = 0.5;
+        const MAX_SCALE = 2.0;
+        let isPanning = false;
+        let startPanX = 0, startPanY = 0;
+        let startCamX = 0, startCamY = 0;
+
+        // Pinch-to-Zoom
+        let initialPinchDistance = null;
+        let initialPinchScale = 1.0;
+        let pinchCenterScreen = null;
+        let pinchCenterWorld = null;
+
+        // Interaktion
+        let draggingNode = null;
+        let draggingWireSegment = null;
+        let wiringStartPort = null;
+        let activeTaster = null;
+        let mouseX = 0, mouseY = 0;
+        
+        // Touch Spezifisch
+        let longPressTimer = null;
+        let isLongPress = false;
+        let lastTapTime = 0;
+        let touchStartX = 0, touchStartY = 0;
+
+        // Timing Engine Vars
+        let simTime = 0; 
+        let lastTickTime = 0;
+        
+        // Timing Recording Vars
+        let isRecording = false;
+        let recordStartTime = 0;
+        let recordEndTime = 0;
+        let recordedSignals = [];
+
+        // --- UI & Modals ---
+        const modalOverlay = document.getElementById('modal-overlay');
+        const modalTitle = document.getElementById('modal-title');
+        const modalContent = document.getElementById('modal-content');
+        const btnCancel = document.getElementById('btn-cancel');
+        const btnOk = document.getElementById('btn-ok');
+        let modalCallback = null;
+
+        function showModal(title, html, callback, hideOk = false) {
+            modalTitle.textContent = title;
+            modalContent.innerHTML = html;
+            btnOk.style.display = hideOk ? 'none' : 'inline-block';
+            btnCancel.textContent = hideOk ? 'Schließen' : 'Abbrechen';
+            modalOverlay.style.display = 'flex';
+            modalCallback = callback;
+        }
+
+        function closeModal() {
+            modalOverlay.style.display = 'none';
+        }
+
+        btnCancel.onclick = closeModal;
+        btnOk.onclick = () => {
+            if (modalCallback) modalCallback();
+            closeModal();
+        };
+
+        document.getElementById('mobile-menu-btn').addEventListener('click', () => { sidebar.classList.toggle('open'); });
+        function autoCloseMenu() { if (window.innerWidth <= 900) sidebar.classList.remove('open'); }
+
+        function resizeCanvas() {
+            canvas.width = canvasContainer.clientWidth;
+            canvas.height = canvasContainer.clientHeight;
+            draw();
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        function getWorldCoords(clientX, clientY) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: (clientX - rect.left - cameraX) / cameraScale,
+                y: (clientY - rect.top - cameraY) / cameraScale
+            };
+        }
+
+        function updateGridBackground() {
+            canvasContainer.style.backgroundSize = `${GRID * cameraScale}px ${GRID * cameraScale}px`;
+            canvasContainer.style.backgroundPosition = `${cameraX}px ${cameraY}px`;
+        }
+
+        // --- Klassen ---
+
+        class Port {
+            constructor(node, type, index, offsetY) {
+                this.node = node; this.type = type; this.index = index; this.offsetY = offsetY;
+                this.state = false; this.radius = 4;
+            }
+            get x() {
+                if (this.node.type === 'junction') return this.node.x;
+                let pLen = this.node.pinLength || 0;
+                return this.type === 'in' ? this.node.x - pLen : this.node.x + this.node.width + pLen;
+            }
+            get y() {
+                if (this.node.type === 'junction') return this.node.y;
+                return this.node.y + this.offsetY;
+            }
+        }
+
+        class Node {
+            constructor(x, y, type) {
+                this.id = nextNodeId++;
+                this.x = x; this.y = y; this.type = type;
+                this.width = 80; this.height = 80; this.pinLength = 20;
+                this.inPorts = []; this.outPorts = [];
+                this.state = false; this.hasInverter = false;
+                this.label = ""; 
+
+                // Laufzeit/Delay System Variablen (LH und HL getrennt)
+                let delayDef = DEFAULT_DELAYS[this.type] || DEFAULT_DELAYS['default'];
+                this.delayLH = delayDef.LH;
+                this.delayHL = delayDef.HL;
+                this.currentTargetDelay = this.delayLH; // Initiale Annahme
+
+                this.inputStableSince = simTime; // Nutzt ab sofort virtuelle Zeit statt Date.now()
+                this.currentRawInputs = [];
+                this.lastStableInputs = [];
+            }
+
+            // Liefert den stabilen Eingangspegel unter Berücksichtigung der Laufzeit
+            getStableInput(index) {
+                // Bei 0ms Delay oder während der Wahrheitstabellen-Erstellung (!isSimulating) Signale sofort durchleiten
+                if ((this.delayLH === 0 && this.delayHL === 0) || !isSimulating) {
+                    return this.inPorts[index] ? this.inPorts[index].state : false;
+                }
+                return this.lastStableInputs[index] || false;
+            }
+
+            // Der neue Wrapper für die Update-Logik, der die Laufzeiten managt
+            processDelayAndUpdateLogic(currentSimTime = 0) {
+                if ((this.delayLH === 0 && this.delayHL === 0) || !isSimulating) {
+                    this.updateLogic(null, false, currentSimTime);
+                    return;
+                }
+
+                let currentInputs = this.inPorts.map(p => p.state);
+                let inputsChanged = false;
+                
+                if (currentInputs.length !== this.currentRawInputs.length) {
+                    inputsChanged = true;
+                } else {
+                    for(let i = 0; i < currentInputs.length; i++) {
+                        if (currentInputs[i] !== this.currentRawInputs[i]) {
+                            inputsChanged = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (inputsChanged) {
+                    this.currentRawInputs = currentInputs;
+                    this.inputStableSince = currentSimTime; // Setze Anker in virtueller Zeit
+                    
+                    // Dry-Run durchführen, um zu sehen, ob das Bauteil auf HIGH oder LOW schalten würde
+                    let expectedOutputs = this.updateLogic(currentInputs, true, currentSimTime);
+                    let expectedMainOut = (expectedOutputs && expectedOutputs.length > 0) ? expectedOutputs[0] : false;
+                    
+                    // Wenn das Bauteil als nächstes auf HIGH schalten würde, nutze delayLH, sonst delayHL
+                    this.currentTargetDelay = expectedMainOut ? this.delayLH : this.delayHL;
+                }
+
+                let delayToUse = this.currentTargetDelay !== undefined ? this.currentTargetDelay : this.delayLH;
+
+                // Wenn Signal lange genug stabil war (in virtueller Zeit!), übernehmen wir es
+                if (currentSimTime - this.inputStableSince >= delayToUse || this.lastStableInputs.length === 0) {
+                    this.lastStableInputs = [...this.currentRawInputs];
+                }
+                
+                // Reale Logik mit den (ggf. verzögerten) stabilen Werten ausführen
+                this.updateLogic(null, false, currentSimTime);
+            }
+
+            isHit(mx, my) {
+                let pLen = this.pinLength || 0;
+                let tolerance = isTouchDevice ? 15 : 0;
+                let topOffset = this.label ? 25 : 0; 
+                return mx >= this.x - pLen - tolerance && mx <= this.x + this.width + pLen + tolerance &&
+                       my >= this.y - topOffset - tolerance && my <= this.y + this.height + tolerance;
+            }
+            drawLabel(ctx) {
+                if (this.label) {
+                    ctx.fillStyle = '#000';
+                    ctx.font = 'bold 14px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'bottom';
+                    ctx.fillText(this.label, this.x + this.width / 2, this.y - 8);
+                }
+            }
+            draw(ctx) {
+                ctx.fillStyle = '#fff'; ctx.strokeStyle = '#333'; ctx.lineWidth = 2;
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+                ctx.strokeRect(this.x, this.y, this.width, this.height);
+            }
+            drawPins(ctx) {
+                if (!this.pinLength) return;
+                ctx.strokeStyle = '#333'; ctx.lineWidth = 2; ctx.beginPath();
+                this.inPorts.forEach(p => { ctx.moveTo(p.x, p.y); ctx.lineTo(this.x, p.y); });
+                this.outPorts.forEach(p => {
+                    let startX = this.x + this.width;
+                    if (this.hasInverter && p.index === 0) startX += 8; 
+                    ctx.moveTo(startX, p.y); ctx.lineTo(p.x, p.y);
+                });
+                ctx.stroke();
+
+                if (this.hasInverter && this.outPorts.length > 0) {
+                    ctx.beginPath();
+                    ctx.arc(this.x + this.width + 4, this.outPorts[0].y, 4, 0, Math.PI*2);
+                    ctx.fillStyle = '#fff'; ctx.fill(); ctx.stroke();
+                }
+            }
+            drawPorts(ctx) {
+                [...this.inPorts, ...this.outPorts].forEach(port => {
+                    ctx.beginPath();
+                    ctx.arc(port.x, port.y, port.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = isSimulating ? (port.state ? '#e74c3c' : '#2c3e50') : '#3498db';
+                    ctx.fill(); ctx.stroke();
+                });
+            }
+            updateLogic(customInputs = null, dryRun = false, currentSimTime = 0) { return []; }
+        }
+
+        class JunctionNode extends Node {
+            constructor(x, y, orientation = 'h') {
+                super(x, y, 'junction');
+                this.width = 0; this.height = 0; this.pinLength = 0;
+                this.orientation = orientation;
+            }
+            draw(ctx) {
+                ctx.beginPath(); ctx.arc(this.x, this.y, 6, 0, Math.PI * 2);
+                let state = this.inPorts.some((p, i) => this.getStableInput(i));
+                ctx.fillStyle = isSimulating && state ? '#e74c3c' : '#000';
+                ctx.fill();
+            }
+            drawPins(ctx) {} drawPorts(ctx) {} drawLabel(ctx) {}
+            updateLogic(customInputs = null, dryRun = false, currentSimTime = 0) {
+                let ins = customInputs || this.inPorts.map((p, i) => this.getStableInput(i));
+                let s = ins.some(val => val);
+                if (dryRun) return [s];
+                this.outPorts.forEach(p => p.state = s);
+            }
+            isHit(mx, my) {
+                let dx = mx - this.x, dy = my - this.y;
+                let tolerance = isTouchDevice ? 25 : 10;
+                return Math.sqrt(dx*dx + dy*dy) <= tolerance;
+            }
+        }
+
+        class GateNode extends Node {
+            constructor(x, y, type) {
+                super(x, y, type);
+                this.hasInverter = (type === 'nand' || type === 'nor' || type === 'xnor');
+                this.setInputs(2);
+                this.outPorts.push(new Port(this, 'out', 0, 40));
+            }
+            setInputs(num) {
+                if (num < this.inPorts.length) {
+                    let removedPorts = this.inPorts.slice(num);
+                    wires = wires.filter(w => !removedPorts.includes(w.toPort));
+                    this.inPorts.splice(num);
+                }
+                if (num === 2) {
+                    if (!this.inPorts[0]) this.inPorts.push(new Port(this, 'in', 0, 20)); else this.inPorts[0].offsetY = 20;
+                    if (!this.inPorts[1]) this.inPorts.push(new Port(this, 'in', 1, 60)); else this.inPorts[1].offsetY = 60;
+                } else if (num === 3) {
+                    if (!this.inPorts[0]) this.inPorts.push(new Port(this, 'in', 0, 20)); else this.inPorts[0].offsetY = 20;
+                    if (!this.inPorts[1]) this.inPorts.push(new Port(this, 'in', 1, 40)); else this.inPorts[1].offsetY = 40;
+                    if (!this.inPorts[2]) this.inPorts.push(new Port(this, 'in', 2, 60)); else this.inPorts[2].offsetY = 60;
+                }
+                if (typeof wires !== 'undefined') {
+                    wires.forEach(w => { if (this.inPorts.includes(w.toPort)) w.points = w.calculatePath(w.fromPort, w.toPort); });
+                }
+            }
+            draw(ctx) {
+                super.draw(ctx); this.drawPins(ctx);
+                let symbol = (this.type === 'and' || this.type === 'nand') ? '&' : 
+                             (this.type === 'xor' || this.type === 'xnor') ? '=1' : '\u22651';
+                ctx.fillStyle = '#000'; ctx.font = 'bold 24px Arial';
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(symbol, this.x + this.width/2, this.y + this.height/2);
+                this.drawPorts(ctx);
+            }
+            updateLogic(customInputs = null, dryRun = false, currentSimTime = 0) {
+                let ins = customInputs || this.inPorts.map((p, i) => this.getStableInput(i));
+                let i1 = ins[0] || false, i2 = ins[1] || false;
+                let i3 = this.inPorts.length === 3 ? (ins[2] || false) : null;
+                let out = false;
+                if(this.type === 'and') out = i3 !== null ? (i1 && i2 && i3) : (i1 && i2);
+                else if(this.type === 'or') out = i3 !== null ? (i1 || i2 || i3) : (i1 || i2);
+                else if(this.type === 'nand') out = i3 !== null ? !(i1 && i2 && i3) : !(i1 && i2);
+                else if(this.type === 'nor') out = i3 !== null ? !(i1 || i2 || i3) : !(i1 || i2);
+                else if(this.type === 'xor') out = i3 !== null ? !!((i1?1:0) ^ (i2?1:0) ^ (i3?1:0)) : (i1 !== i2);
+                else if(this.type === 'xnor') out = i3 !== null ? !((i1?1:0) ^ (i2?1:0) ^ (i3?1:0)) : (i1 === i2);
+                
+                if (dryRun) return [out];
+                this.outPorts[0].state = out;
+            }
+        }
+
+        class NotNode extends Node {
+            constructor(x, y) {
+                super(x, y, 'not');
+                this.hasInverter = true;
+                this.inPorts.push(new Port(this, 'in', 0, 40));
+                this.outPorts.push(new Port(this, 'out', 0, 40));
+            }
+            draw(ctx) {
+                super.draw(ctx); this.drawPins(ctx);
+                ctx.fillStyle = '#000'; ctx.font = 'bold 24px Arial';
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText('1', this.x + this.width/2, this.y + this.height/2);
+                this.drawPorts(ctx);
+                this.drawLabel(ctx);
+            }
+            updateLogic(customInputs = null, dryRun = false, currentSimTime = 0) {
+                let ins = customInputs || this.inPorts.map((p, i) => this.getStableInput(i));
+                let out = !(ins[0] || false);
+                if (dryRun) return [out];
+                this.outPorts[0].state = out;
+            }
+        }
+
+        class RSFlipFlopNode extends Node {
+            constructor(x, y) {
+                super(x, y, 'rs_ff');
+                this.width = 80; this.height = 80; this.pinLength = 20;
+                this.inPorts.push(new Port(this, 'in', 0, 20)); // S
+                this.inPorts.push(new Port(this, 'in', 1, 60)); // R
+                this.outPorts.push(new Port(this, 'out', 0, 20)); // Q
+                this.outPorts.push(new Port(this, 'out', 1, 60)); // Q_inv
+
+                this.stateQ = false;
+            }
+            drawPins(ctx) {
+                if (!this.pinLength) return;
+                ctx.strokeStyle = '#333'; ctx.lineWidth = 2; ctx.beginPath();
+                this.inPorts.forEach(p => { ctx.moveTo(p.x, p.y); ctx.lineTo(this.x, p.y); });
+                this.outPorts.forEach(p => {
+                    let startX = this.x + this.width;
+                    if (p.index === 1) startX += 8; // skip circle
+                    ctx.moveTo(startX, p.y); ctx.lineTo(p.x, p.y);
+                });
+                ctx.stroke();
+
+                // Q_inv Inverter Kreis
+                ctx.beginPath();
+                ctx.arc(this.x + this.width + 4, this.outPorts[1].y, 4, 0, Math.PI*2);
+                ctx.fillStyle = '#fff'; ctx.fill(); ctx.stroke();
+            }
+            draw(ctx) {
+                super.draw(ctx); this.drawPins(ctx);
+                ctx.fillStyle = '#000'; ctx.font = 'bold 24px Arial';
+                ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+                ctx.fillText("S", this.x + 12, this.y + 20);
+                ctx.fillText("R", this.x + 12, this.y + 60);
+                this.drawPorts(ctx);
+                this.drawLabel(ctx);
+            }
+            updateLogic(customInputs = null, dryRun = false, currentSimTime = 0) {
+                let ins = customInputs || this.inPorts.map((p, i) => this.getStableInput(i));
+                let s = ins[0] || false;
+                let r = ins[1] || false;
+
+                let nextQ = this.stateQ;
+                if (r) {
+                    nextQ = false;
+                } else if (s) {
+                    nextQ = true;
+                }
+
+                if (dryRun) return [nextQ, !nextQ];
+                
+                this.stateQ = nextQ;
+                this.outPorts[0].state = this.stateQ;
+                this.outPorts[1].state = !this.stateQ;
+            }
+        }
+
+        class MonoflopNode extends Node {
+            constructor(x, y, type) {
+                super(x, y, type);
+                this.width = 80; this.height = 80; this.pinLength = 20; 
+                this.inPorts.push(new Port(this, 'in', 0, 40)); 
+                this.outPorts.push(new Port(this, 'out', 0, 20)); 
+                this.outPorts.push(new Port(this, 'out', 1, 60)); 
+
+                this.prevInState = false; this.active = false;
+                this.triggerTime = 0; this.duration = 2000;
+                
+                this.retriggerable = (type === 'mono_pos_retrig' || type === 'mono_neg_retrig');
+                this.isNegEdge = (type === 'mono_neg' || type === 'mono_neg_retrig');
+
+                this.outPorts[0].state = false; this.outPorts[1].state = true;
+            }
+            drawPins(ctx) {
+                if (!this.pinLength) return;
+                ctx.strokeStyle = '#333'; ctx.lineWidth = 2; ctx.beginPath();
+                this.inPorts.forEach(p => { 
+                    let endX = this.x;
+                    if (this.isNegEdge && p.index === 0) endX -= 8;
+                    ctx.moveTo(p.x, p.y); ctx.lineTo(endX, p.y); 
+                });
+                this.outPorts.forEach(p => {
+                    let startX = this.x + this.width;
+                    if (p.index === 1) startX += 8; 
+                    ctx.moveTo(startX, p.y); ctx.lineTo(p.x, p.y);
+                });
+                ctx.stroke();
+
+                ctx.beginPath(); ctx.arc(this.x + this.width + 4, this.outPorts[1].y, 4, 0, Math.PI*2);
+                ctx.fillStyle = '#fff'; ctx.fill(); ctx.stroke();
+
+                if (this.isNegEdge) {
+                    ctx.beginPath(); ctx.arc(this.x - 4, this.inPorts[0].y, 4, 0, Math.PI*2);
+                    ctx.fillStyle = '#fff'; ctx.fill(); ctx.stroke();
+                }
+            }
+            draw(ctx) {
+                super.draw(ctx); this.drawPins(ctx);
+
+                ctx.fillStyle = '#000'; 
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                
+                let px, py = this.y + 30;
+                if (!this.retriggerable) {
+                    ctx.font = 'bold 20px Arial';
+                    ctx.fillText("1", this.x + 30, this.y + 25);
+                    px = this.x + 45;
+                } else {
+                    px = this.x + 27; 
+                }
+
+                ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px+8, py);
+                ctx.lineTo(px+8, py-16); ctx.lineTo(px+18, py-16);
+                ctx.lineTo(px+18, py); ctx.lineTo(px+26, py); ctx.stroke();
+
+                let inY = this.inPorts[0].y;
+                ctx.beginPath(); ctx.moveTo(this.x, inY - 6); ctx.lineTo(this.x + 10, inY); ctx.lineTo(this.x, inY + 6);
+                ctx.stroke(); 
+
+                this.drawPorts(ctx);
+                this.drawLabel(ctx);
+            }
+            updateLogic(customInputs = null, dryRun = false, currentSimTime = 0) {
+                let ins = customInputs || this.inPorts.map((p, i) => this.getStableInput(i));
+                let currInState = ins[0] || false;
+                let triggered = false;
+                if (!this.isNegEdge) { if (!this.prevInState && currInState) triggered = true; } 
+                else { if (this.prevInState && !currInState) triggered = true; }
+
+                let nextActive = this.active;
+                let nextTriggerTime = this.triggerTime;
+
+                if (triggered) {
+                    if (!nextActive) { nextActive = true; nextTriggerTime = currentSimTime; }
+                    else if (this.retriggerable) { nextTriggerTime = currentSimTime; }
+                }
+
+                if (nextActive && currentSimTime - nextTriggerTime >= this.duration) { nextActive = false; }
+                
+                if (dryRun) return [nextActive, !nextActive];
+                
+                this.active = nextActive;
+                this.triggerTime = nextTriggerTime;
+                this.outPorts[0].state = this.active;       
+                this.outPorts[1].state = !this.active;      
+                this.prevInState = currInState;
+            }
+        }
+
+        class InputNode extends Node {
+            constructor(x, y, type) {
+                super(x, y, type);
+                this.width = 80; this.height = 80; this.pinLength = 20;
+                this.outPorts.push(new Port(this, 'out', 0, 40));
+                this.isPressed = false;
+            }
+            draw(ctx) {
+                ctx.fillStyle = '#fff';
+                ctx.strokeStyle = '#333'; ctx.lineWidth = 2;
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+                ctx.strokeRect(this.x, this.y, this.width, this.height);
+                this.drawPins(ctx);
+
+                ctx.beginPath();
+                ctx.arc(this.x + this.width / 2, this.y + 35, 24, 0, Math.PI * 2);
+                ctx.fillStyle = '#fff';
+                ctx.fill();
+                ctx.stroke();
+
+                let btnColor = (isSimulating && this.isPressed) ? '#555' : '#888';
+                ctx.beginPath();
+                ctx.arc(this.x + this.width / 2, this.y + 35, 18, 0, Math.PI * 2);
+                ctx.fillStyle = btnColor;
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = '#000';
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                let labelText = this.type === 'taster' ? 'Taster' : 'Schalter';
+                ctx.fillText(labelText, this.x + this.width / 2, this.y + 68);
+
+                this.drawPorts(ctx);
+                this.drawLabel(ctx);
+            }
+            updateLogic(customInputs = null, dryRun = false, currentSimTime = 0) { 
+                if (dryRun) return [this.isPressed];
+                this.outPorts[0].state = this.isPressed; 
+            }
+        }
+
+        class OutputNode extends Node {
+            constructor(x, y) {
+                super(x, y, 'output');
+                this.width = 80; this.height = 80; this.pinLength = 20;
+                this.inPorts.push(new Port(this, 'in', 0, 40));
+            }
+            draw(ctx) {
+                ctx.fillStyle = (isSimulating && this.getStableInput(0)) ? '#f1c40f' : '#fff';
+                ctx.strokeStyle = '#333'; 
+                ctx.lineWidth = 2;
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+                ctx.strokeRect(this.x, this.y, this.width, this.height);
+                
+                this.drawPins(ctx);
+                
+                ctx.fillStyle = '#000';
+                ctx.font = 'bold 16px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('Output', this.x + this.width / 2, this.y + this.height / 2);
+
+                this.drawPorts(ctx);
+                this.drawLabel(ctx);
+            }
+            updateLogic(customInputs = null, dryRun = false, currentSimTime = 0) {
+                if (dryRun) return [];
+            }
+        }
+
+        class Wire {
+            constructor(fromPort, toPort, points = null) {
+                this.fromPort = fromPort; this.toPort = toPort;
+                this.state = false;
+                this.points = points || this.calculatePath(fromPort, toPort);
+            }
+            calculatePath(fromP, toP) {
+                let sX = fromP.x, sY = fromP.y; let eX = toP.x, eY = toP.y; let pts = [];
+                let startDir = 'h';
+                if (fromP.node.type === 'junction') startDir = fromP.node.orientation === 'h' ? 'v' : 'h'; 
+                
+                if (startDir === 'h') {
+                    if (sX <= eX - 20) {
+                        let mX = snap((sX + eX) / 2);
+                        pts.push({x: sX, y: sY}, {x: mX, y: sY}, {x: mX, y: eY}, {x: eX, y: eY});
+                    } else {
+                        let mX1 = sX + 20; let mY = snap((sY > eY) ? sY + (eY-sY)/2 : Math.max(sY, eY) + 40); let mX2 = Math.min(sX, eX) - 20;
+                        pts.push({x: sX, y: sY}, {x: mX1, y: sY}, {x: mX1, y: mY}, {x: mX2, y: mY}, {x: mX2, y: eY}, {x: eX, y: eY});
+                    }
+                } else {
+                    if (sY <= eY - 20) {
+                        let mY = snap((sY + eY) / 2);
+                        pts.push({x: sX, y: sY}, {x: sX, y: mY}, {x: eX, y: mY}, {x: eX, y: eY});
+                    } else {
+                        let mY1 = sY + 20; let mX = snap((sX > eX) ? sX + (eX-sX)/2 : Math.max(sX, eX) + 40); let mY2 = Math.min(sY, eY) - 20;
+                        pts.push({x: sX, y: sY}, {x: sX, y: mY1}, {x: mX, y: mY1}, {x: mX, y: mY2}, {x: eX, y: mY2}, {x: eX, y: eY});
+                    }
+                }
+                return pts;
+            }
+            getSegments() {
+                let segs = [];
+                for (let i = 0; i < this.points.length - 1; i++) {
+                    let p1 = this.points[i], p2 = this.points[i+1];
+                    segs.push({x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y, type: p1.y === p2.y ? 'h' : 'v', index: i});
+                }
+                return segs;
+            }
+            draw(ctx) {
+                ctx.strokeStyle = isSimulating ? (this.state ? '#e74c3c' : '#2c3e50') : '#34495e';
+                ctx.lineWidth = isSimulating && this.state ? 3 : 2;
+                let segs = this.getSegments();
+                ctx.beginPath();
+                if (segs.length > 0) { ctx.moveTo(segs[0].x1, segs[0].y1); segs.forEach(s => ctx.lineTo(s.x2, s.y2)); }
+                ctx.stroke();
+            }
+            updateLogic() { this.state = this.fromPort.state; this.toPort.state = this.state; }
+        }
+
+        // --- Fabrik & Helper ---
+        function createNodeByType(type, cx, cy) {
+            let x = snap(cx - 40); let y = snap(cy - 40);
+            switch(type) {
+                case 'taster': return new InputNode(x, y, 'taster');
+                case 'schalter': return new InputNode(x, y, 'schalter');
+                case 'output': return new OutputNode(x, y);
+                case 'and': case 'or': case 'nand': case 'nor': case 'xor': case 'xnor': return new GateNode(x, y, type);
+                case 'not': return new NotNode(x, y);
+                case 'rs_ff': return new RSFlipFlopNode(x, y);
+                case 'mono_pos': case 'mono_neg': case 'mono_pos_retrig': case 'mono_neg_retrig': return new MonoflopNode(x, y, type);
+            }
+            return null;
+        }
+
+        function getPortAt(x, y) {
+            let tolerance = isTouchDevice ? 20 : 5; 
+            for (let node of nodes) {
+                if (node.type === 'junction' && node.isHit(x, y)) {
+                    let p = new Port(node, 'out', node.outPorts.length, 0);
+                    node.outPorts.push(p); return p;
+                }
+                let allPorts = [...node.inPorts, ...node.outPorts];
+                for (let port of allPorts) {
+                    let dx = x - port.x, dy = y - port.y;
+                    if (Math.sqrt(dx*dx + dy*dy) < port.radius + tolerance) return port;
+                }
+            }
+            return null;
+        }
+
+        function getNodeAt(x, y) {
+            for (let i = nodes.length - 1; i >= 0; i--) if (nodes[i].isHit(x, y)) return nodes[i];
+            return null;
+        }
+
+        function getWireAt(x, y) {
+            const threshold = isTouchDevice ? 15 : 6;
+            for (let i = wires.length - 1; i >= 0; i--) {
+                let segs = wires[i].getSegments();
+                for (let s of segs) {
+                    let minX = Math.min(s.x1, s.x2), maxX = Math.max(s.x1, s.x2);
+                    let minY = Math.min(s.y1, s.y2), maxY = Math.max(s.y1, s.y2);
+                    if (s.x1 === s.x2 && y >= minY - threshold && y <= maxY + threshold && Math.abs(x - s.x1) <= threshold) return wires[i];
+                    if (s.y1 === s.y2 && x >= minX - threshold && x <= maxX + threshold && Math.abs(y - s.y1) <= threshold) return wires[i];
+                }
+            }
+            return null;
+        }
+
+        function getWireDragSegment(x, y) {
+            const threshold = isTouchDevice ? 20 : 8;
+            for (let w of wires) {
+                let segs = w.getSegments();
+                for (let i = 1; i < segs.length - 1; i++) {
+                    let s = segs[i];
+                    let minX = Math.min(s.x1, s.x2), maxX = Math.max(s.x1, s.x2);
+                    let minY = Math.min(s.y1, s.y2), maxY = Math.max(s.y1, s.y2);
+                    if (s.type === 'v' && y >= minY && y <= maxY && Math.abs(x - s.x1) <= threshold) 
+                        return { wire: w, index: s.index, type: 'v', startMouse: {x,y}, startPts: JSON.parse(JSON.stringify(w.points)) };
+                    if (s.type === 'h' && x >= minX && x <= maxX && Math.abs(y - s.y1) <= threshold) 
+                        return { wire: w, index: s.index, type: 'h', startMouse: {x,y}, startPts: JSON.parse(JSON.stringify(w.points)) };
+                }
+            }
+            return null;
+        }
+
+        function splitWire(hitWire, jX, jY, newJunction) {
+            let pts = hitWire.points; let splitIdx = -1;
+            for(let i=0; i<pts.length-1; i++){
+                let p1 = pts[i], p2 = pts[i+1];
+                let minX = Math.min(p1.x, p2.x), maxX = Math.max(p1.x, p2.x);
+                let minY = Math.min(p1.y, p2.y), maxY = Math.max(p1.y, p2.y);
+                if (p1.x === p2.x && jX === p1.x && jY >= minY && jY <= maxY) { splitIdx = i; break; }
+                if (p1.y === p2.y && jY === p1.y && jX >= minX && jX <= maxX) { splitIdx = i; break; }
+            }
+            if (splitIdx !== -1) {
+                let pts1 = pts.slice(0, splitIdx + 1); pts1.push({x: jX, y: jY});
+                let pts2 = [{x: jX, y: jY}].concat(pts.slice(splitIdx + 1));
+                pts1 = pts1.filter((p, index, arr) => index === 0 || p.x !== arr[index-1].x || p.y !== arr[index-1].y);
+                pts2 = pts2.filter((p, index, arr) => index === 0 || p.x !== arr[index-1].x || p.y !== arr[index-1].y);
+
+                let pIn = new Port(newJunction, 'in', 0, 0); let pOut = new Port(newJunction, 'out', 0, 0);
+                newJunction.inPorts.push(pIn); newJunction.outPorts.push(pOut);
+                wires.push(new Wire(hitWire.fromPort, pIn, pts1));
+                wires.push(new Wire(pOut, hitWire.toPort, pts2));
+                wires = wires.filter(w => w !== hitWire);
+            }
+        }
+
+        // --- Wahrheitstabelle Extraktion ---
+        document.getElementById('btn-truth-table').addEventListener('click', () => {
+            let ins = nodes.filter(n => n instanceof InputNode);
+            let outs = nodes.filter(n => n instanceof OutputNode);
+            
+            // Sortierung einführen:
+            // Inputs absteigend sortieren (S3, S2, S1). 
+            // So landet S1 beim Generieren der HTML-Tabelle ganz rechts und fungiert im Binär-Zähler als LSB.
+            ins.sort((a, b) => (b.label || 'Input').localeCompare(a.label || 'Input', undefined, {numeric: true}));
+            
+            // Outputs aufsteigend sortieren (Out1, Out2, Out3).
+            outs.sort((a, b) => (a.label || 'Output').localeCompare(b.label || 'Output', undefined, {numeric: true}));
+
+            if(ins.length === 0 || outs.length === 0) {
+                showModal("Fehler", "<p>Für eine Wahrheitstabelle werden mindestens ein Input (Schalter/Taster) und ein Output benötigt.</p>", null, true);
+                return;
+            }
+            if(ins.length > 8) {
+                showModal("Warnung", "<p>Zu viele Inputs! Maximal 8 Inputs erlaubt (aus Performance- und Platzgründen).</p>", null, true);
+                return;
+            }
+
+            // Aktuellen Zustand speichern
+            let savedIn = ins.map(n => n.isPressed);
+            let savedNodes = nodes.map(n => n.outPorts.map(p => p.state));
+            let savedWires = wires.map(w => w.state);
+
+            let tableData = []; 
+            let numCombos = Math.pow(2, ins.length);
+
+            // Simulation anhalten, um Delays für die statische Berechnung zu überspringen
+            let wasSimulating = isSimulating;
+            isSimulating = false;
+
+            for (let i = 0; i < numCombos; i++) {
+                // Eingänge setzen (Binär zählen)
+                for (let j = 0; j < ins.length; j++) {
+                    ins[j].isPressed = Boolean(i & (1 << (ins.length - 1 - j)));
+                }
+
+                // Logik durchrechnen lassen (max 20 Iterationen für Signaldurchlauf)
+                for(let k=0; k<20; k++){
+                    nodes.forEach(n => n.processDelayAndUpdateLogic(0)); // Nutzt Wrapper (ohne Verzögerung da isSimulating=false)
+                    wires.forEach(w => w.updateLogic());
+                }
+
+                let rowIn = ins.map(n => n.isPressed ? 1 : 0);
+                let rowOut = outs.map(n => n.inPorts[0].state ? 1 : 0);
+                tableData.push({ in: rowIn, out: rowOut });
+            }
+
+            // Zustand wiederherstellen
+            ins.forEach((n, i) => n.isPressed = savedIn[i]);
+            nodes.forEach((n, i) => n.outPorts.forEach((p, j) => p.state = savedNodes[i][j]));
+            wires.forEach((w, i) => w.state = savedWires[i]);
+            isSimulating = wasSimulating;
+            draw();
+
+            // HTML Tabelle aufbauen
+            let html = `
+                <div style="padding: 10px; text-align: center; font-size: 0.85rem; color: #7f8c8d; margin-bottom: 10px;">
+                    Achtung: Wahrheitstabellen sind primär für statische Logik (AND, OR, NOT...). <br>Zeitabhängige Bauteile (Flip-Flops, Monoflops) führen zu undefinierten Tabellenwerten.
+                </div>
+                <div style="overflow-y: auto; flex-grow: 1;">
+                    <table style="width:100%; border-collapse: collapse; text-align: center; font-size: 1.1rem;">
+                        <tr style="background:#2c3e50; color:white;">
+            `;
+            ins.forEach(n => html += `<th style="padding:10px; border:1px solid #4a6278;">${n.label || 'Input'}</th>`);
+            outs.forEach(n => html += `<th style="padding:10px; border:1px solid #4a6278; background:#c0392b;">${n.label || 'Output'}</th>`);
+            html += '</tr>';
+
+            tableData.forEach((row, rowIdx) => {
+                let bg = rowIdx % 2 === 0 ? '#fff' : '#f9f9f9';
+                html += `<tr style="background: ${bg};">`;
+                row.in.forEach(val => html += `<td style="padding:8px; border:1px solid #ddd;">${val}</td>`);
+                row.out.forEach(val => html += `<td style="padding:8px; border:1px solid #ddd; font-weight:bold; color:${val?'#27ae60':'#c0392b'};">${val}</td>`);
+                html += '</tr>';
+            });
+            html += '</table></div>';
+
+            // --- DNF Generierung (Disjunktive Normalform) ---
+            html += '<div style="margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 4px; border: 1px solid #ccc; text-align: left; overflow-x: auto;">';
+            html += '<strong style="color: #2c3e50; font-size: 1.1rem;">Schaltfunktionen (Disjunktive Normalform):</strong><br><br>';
+            
+            outs.forEach((outNode, outIdx) => {
+                let terms = [];
+                tableData.forEach((row) => {
+                    // Für jede Zeile mit Ausgang = 1 bilden wir einen Minterm
+                    if (row.out[outIdx] === 1) {
+                        let termParts = [];
+                        ins.forEach((inNode, inIdx) => {
+                            let labelName = inNode.label || ('In' + (inIdx + 1));
+                            if (row.in[inIdx] === 1) {
+                                termParts.push(labelName);
+                            } else {
+                                // Negierung mit HTML Overline
+                                termParts.push(`<span style="text-decoration: overline;">${labelName}</span>`);
+                            }
+                        });
+                        // Minterme mit UND (∧) verknüpfen
+                        terms.push('(' + termParts.join(' &and; ') + ')');
+                    }
+                });
+                
+                let outLabel = outNode.label || ('Out' + (outIdx + 1));
+                let dnfStr = '0';
+                
+                if (terms.length === tableData.length && tableData.length > 0) {
+                    dnfStr = '1';
+                } else if (terms.length > 0) {
+                    // Alle Minterme mit ODER (∨) verknüpfen
+                    dnfStr = terms.join(' &or; ');
+                }
+                
+                html += `<div style="margin-bottom: 8px; font-family: monospace; font-size: 1.1rem;"><span style="color: #c0392b; font-weight: bold;">${outLabel}</span> = ${dnfStr}</div>`;
+            });
+            html += '</div>';
+
+            document.getElementById('extract-title').textContent = "Wahrheitstabelle";
+            document.getElementById('extract-content').innerHTML = html;
+            document.getElementById('extract-overlay').style.display = 'flex';
+
+            document.getElementById('btn-extract-copy').onclick = () => copyTruthTableToClipboard(ins, outs, tableData);
+        });
+
+        function copyTruthTableToClipboard(ins, outs, tableData) {
+            let cols = ins.length + outs.length;
+            let rows = tableData.length + 1;
+            let cellW = 100; let cellH = 50;
+            let exportCanvas = document.createElement('canvas');
+            exportCanvas.width = cols * cellW;
+            exportCanvas.height = rows * cellH;
+            let eCtx = exportCanvas.getContext('2d');
+
+            eCtx.fillStyle = '#ffffff'; eCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+            eCtx.font = 'bold 18px Arial'; eCtx.textAlign = 'center'; eCtx.textBaseline = 'middle';
+
+            // Header
+            for(let i=0; i<ins.length; i++) {
+                eCtx.fillStyle = '#2c3e50'; eCtx.fillRect(i*cellW, 0, cellW, cellH);
+                eCtx.fillStyle = '#fff'; eCtx.fillText(ins[i].label || 'Input', i*cellW + cellW/2, cellH/2);
+            }
+            for(let i=0; i<outs.length; i++) {
+                let col = ins.length + i;
+                eCtx.fillStyle = '#c0392b'; eCtx.fillRect(col*cellW, 0, cellW, cellH);
+                eCtx.fillStyle = '#fff'; eCtx.fillText(outs[i].label || 'Output', col*cellW + cellW/2, cellH/2);
+            }
+
+            // Data
+            eCtx.strokeStyle = '#ddd'; eCtx.lineWidth = 2;
+            for(let r=0; r<tableData.length; r++) {
+                let y = (r+1) * cellH;
+                for(let c=0; c<ins.length; c++) {
+                    eCtx.fillStyle = '#000'; eCtx.font = '18px Arial';
+                    eCtx.fillText(tableData[r].in[c], c*cellW + cellW/2, y + cellH/2);
+                    eCtx.strokeRect(c*cellW, y, cellW, cellH);
+                }
+                for(let c=0; c<outs.length; c++) {
+                    let val = tableData[r].out[c];
+                    eCtx.fillStyle = val ? '#27ae60' : '#c0392b'; eCtx.font = 'bold 18px Arial';
+                    eCtx.fillText(val, (ins.length+c)*cellW + cellW/2, y + cellH/2);
+                    eCtx.strokeRect((ins.length+c)*cellW, y, cellW, cellH);
+                }
+            }
+
+            exportCanvas.toBlob(blob => {
+                if(!blob) return;
+                try {
+                    navigator.clipboard.write([new ClipboardItem({"image/png": blob})]).then(() => {
+                        let btn = document.getElementById('btn-extract-copy');
+                        let oldText = btn.textContent;
+                        btn.textContent = "✔ Kopiert!";
+                        setTimeout(() => btn.textContent = oldText, 2000);
+                    });
+                } catch(e) { alert("Dein Browser blockiert das Kopieren."); }
+            });
+        }
+
+        // --- Impulsdiagramm (Recording) ---
+        document.getElementById('btn-timing').addEventListener('click', () => {
+            if (!isSimulating) {
+                // Auto start simulation
+                document.getElementById('sim-btn').click();
+            }
+            
+            let btnRec = document.getElementById('floating-rec-btn');
+            btnRec.style.display = 'block';
+            btnRec.textContent = "🔴 Aufnahme starten";
+            isRecording = false;
+        });
+
+        document.getElementById('floating-rec-btn').addEventListener('click', (e) => {
+            let btnRec = e.target;
+            if (!isRecording) {
+                // START RECORDING
+                isRecording = true;
+                recordStartTime = simTime;
+                recordedSignals = [];
+                
+                // Init signals for all active output ports + Output Nodes
+                nodes.forEach(n => {
+                    if (n instanceof JunctionNode) return;
+                    
+                    if (n instanceof OutputNode) {
+                        // Speziell für Output-Bauteile: Den Eingang aufnehmen
+                        recordedSignals.push({
+                            id: n.id + "_in0",
+                            name: n.label || "OUTPUT",
+                            node: n,
+                            port: n.inPorts[0],
+                            active: true,
+                            data: [{ t: 0, state: n.inPorts[0].state }]
+                        });
+                    } else {
+                        // Standard-Bauteile: Alle Ausgänge aufnehmen
+                        n.outPorts.forEach(p => {
+                            let pName = "";
+                            if (n instanceof MonoflopNode || n.type === 'rs_ff') {
+                                pName = p.index === 0 ? " (Q)" : " (!Q)";
+                            } else if (n.outPorts.length > 1) {
+                                pName = ` (Port ${p.index})`;
+                            }
+                            let name = (n.label || n.type.toUpperCase()) + pName;
+                            
+                            recordedSignals.push({
+                                id: n.id + "_" + p.index,
+                                name: name,
+                                node: n,
+                                port: p,
+                                active: true,
+                                data: [{ t: 0, state: p.state }]
+                            });
+                        });
+                    }
+                });
+
+                // Signale sortieren: 1. Inputs, 2. Logik, 3. Outputs. Jeweils alphabetisch (mit korrekter Zahlensortierung).
+                recordedSignals.sort((a, b) => {
+                    let weightA = (a.node instanceof InputNode) ? 1 : (a.node instanceof OutputNode) ? 3 : 2;
+                    let weightB = (b.node instanceof InputNode) ? 1 : (b.node instanceof OutputNode) ? 3 : 2;
+                    if (weightA !== weightB) return weightA - weightB;
+                    return a.name.localeCompare(b.name, undefined, {numeric: true});
+                });
+
+                btnRec.textContent = "⏹️ Aufnahme stoppen";
+            } else {
+                // STOP RECORDING
+                isRecording = false;
+                recordEndTime = simTime;
+                btnRec.style.display = 'none';
+
+                openTimingDiagramWindow();
+            }
+        });
+
+        function openTimingDiagramWindow() {
+            let html = `
+                <div class="timing-wrapper">
+                    <div class="timing-sidebar">
+                        <h4 style="margin-top:0; color:#2c3e50; font-size:1rem;">Aufgenommene Signale</h4>
+                        
+                        <div style="font-size: 0.8rem; color:#7f8c8d; margin-bottom:5px;">X-Achse Zoom:</div>
+                        <input type="range" id="timing-zoom" min="10" max="500" value="150" style="width: 100%; margin-bottom: 20px; cursor: pointer;" oninput="drawTimingCanvas()">
+
+                        <div style="font-size: 0.8rem; color:#7f8c8d; margin-bottom:10px;">Bitte an/abwählen:</div>
+                        <div id="timing-checkboxes" style="display:flex; flex-direction:column; gap:5px;"></div>
+                    </div>
+                    <div id="timing-canvas-container" class="timing-main">
+                        <canvas id="timing-canvas"></canvas>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('extract-title').textContent = "Impulsdiagramm";
+            document.getElementById('extract-content').innerHTML = html;
+            document.getElementById('extract-overlay').style.display = 'flex';
+
+            // Generate Checkboxes
+            let cbContainer = document.getElementById('timing-checkboxes');
+            recordedSignals.forEach((sig) => {
+                let lbl = document.createElement('label');
+                let cb = document.createElement('input');
+                cb.type = 'checkbox'; cb.checked = sig.active;
+                cb.onchange = (e) => { sig.active = e.target.checked; drawTimingCanvas(); };
+                lbl.appendChild(cb);
+                lbl.appendChild(document.createTextNode(' ' + sig.name));
+                cbContainer.appendChild(lbl);
+            });
+
+            // Kleines Timeout, um sicherzugehen, dass das DOM berechnet wurde bevor das Canvas gezeichnet wird
+            setTimeout(drawTimingCanvas, 10);
+
+            document.getElementById('btn-extract-copy').onclick = () => {
+                let canvas = document.getElementById('timing-canvas');
+                canvas.toBlob(blob => {
+                    if(!blob) return;
+                    try {
+                        navigator.clipboard.write([new ClipboardItem({"image/png": blob})]).then(() => {
+                            let btn = document.getElementById('btn-extract-copy');
+                            let oldText = btn.textContent;
+                            btn.textContent = "✔ Kopiert!";
+                            setTimeout(() => btn.textContent = oldText, 2000);
+                        });
+                    } catch(e) { alert("Dein Browser blockiert das Kopieren."); }
+                });
+            };
+        }
+
+        function drawTimingCanvas() {
+            let canvas = document.getElementById('timing-canvas');
+            if(!canvas) return;
+            let ctx = canvas.getContext('2d');
+            let activeSigs = recordedSignals.filter(s => s.active);
+            
+            let duration = recordEndTime - recordStartTime;
+            if (duration < 100) duration = 100;
+
+            let rowH = 60;
+            let padTop = 20;
+            let padBottom = 60; // Platz für X-Achse unten
+            let labelW = 120; // Breite der linken Spalte für Namen
+
+            canvas.height = Math.max(300, activeSigs.length * rowH + padTop + padBottom);
+            
+            // X-Scale: Berechnung anhand des Sliders (Standard: 150 Pixel pro Sekunde)
+            let zoomInput = document.getElementById('timing-zoom');
+            let pixelsPerSecond = zoomInput ? parseInt(zoomInput.value) : 150;
+            
+            let containerW = document.getElementById('timing-canvas-container').clientWidth;
+            let traceAreaW = Math.max(Math.max(300, containerW - labelW - 20), (duration / 1000) * pixelsPerSecond);
+            canvas.width = labelW + traceAreaW;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Keine Signale
+            if (activeSigs.length === 0) {
+                ctx.fillStyle = '#7f8c8d'; ctx.font = '16px Arial'; ctx.textAlign='center';
+                ctx.fillText("Bitte wähle links Signale aus.", canvas.width/2, canvas.height/2);
+                return;
+            }
+
+            // Abwechselnde Hintergrundfarben für Reihen & Trennlinien
+            activeSigs.forEach((sig, i) => {
+                let y = padTop + i * rowH;
+                if(i % 2 !== 0) {
+                    ctx.fillStyle = '#f9fafa';
+                    ctx.fillRect(labelW, y, traceAreaW, rowH);
+                }
+                ctx.strokeStyle = '#ecf0f1'; ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+            });
+
+            // Hintergrund linke Spalte (Namen) & Trennlinie zum Graph
+            ctx.fillStyle = '#fdfdfd';
+            ctx.fillRect(0, 0, labelW, canvas.height);
+            ctx.strokeStyle = '#bdc3c7'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(labelW, 0); ctx.lineTo(labelW, canvas.height); ctx.stroke();
+
+            // X-Achse (Zeit) ganz unten zeichnen
+            let xAxisY = canvas.height - padBottom + 10;
+            ctx.strokeStyle = '#2c3e50'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(labelW, xAxisY); ctx.lineTo(canvas.width, xAxisY); ctx.stroke();
+            
+            ctx.fillStyle = '#2c3e50'; ctx.font = 'bold 12px Arial'; ctx.textAlign = 'left';
+            ctx.fillText("Zeit (s)", labelW + 10, xAxisY + 35);
+
+            // Sekundenmarker & vertikale Gitterlinien
+            let stepMs = duration > 10000 ? 1000 : (duration > 2000 ? 500 : 100);
+            ctx.textAlign = 'center';
+            for(let t = 0; t <= duration; t += stepMs) {
+                let x = labelW + (t / duration) * traceAreaW;
+                
+                // Vertikale Gitterlinie
+                ctx.strokeStyle = '#ecf0f1'; ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.moveTo(x, padTop); ctx.lineTo(x, xAxisY); ctx.stroke();
+                
+                // Tick an der Achse
+                ctx.strokeStyle = '#2c3e50'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.moveTo(x, xAxisY); ctx.lineTo(x, xAxisY + 5); ctx.stroke();
+                
+                // Zeit Text
+                ctx.fillStyle = '#7f8c8d';
+                ctx.fillText((t/1000).toFixed(1), x, xAxisY + 20);
+            }
+
+            // Signale zeichnen
+            activeSigs.forEach((sig, i) => {
+                let yOffset = padTop + i * rowH;
+                let yHigh = yOffset + 15;
+                let yLow = yOffset + rowH - 15;
+
+                // Name des Signals (Linke Spalte)
+                ctx.fillStyle = '#000'; ctx.font = 'bold 14px monospace'; ctx.textAlign='left'; ctx.textBaseline='middle';
+                ctx.fillText(sig.name, 10, yOffset + rowH / 2);
+
+                // Hilfslinie (gestrichelt für '0' Pegel)
+                ctx.strokeStyle = 'rgba(0,0,0,0.05)'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
+                ctx.beginPath(); ctx.moveTo(labelW, yLow); ctx.lineTo(canvas.width, yLow); ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Signalverlauf
+                ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 2; ctx.lineJoin = 'round';
+                ctx.beginPath();
+                
+                let lastX = labelW;
+                let lastY = sig.data[0].state ? yHigh : yLow;
+                ctx.moveTo(lastX, lastY);
+
+                for(let j = 1; j < sig.data.length; j++) {
+                    let d = sig.data[j];
+                    let x = labelW + (d.t / duration) * traceAreaW;
+                    
+                    ctx.lineTo(x, lastY); // Halte vorherigen Pegel bis zum Zeitpunkt t
+                    
+                    let newY = d.state ? yHigh : yLow;
+                    ctx.lineTo(x, newY); // Vertikaler Sprung
+                    
+                    lastX = x;
+                    lastY = newY;
+                }
+                ctx.lineTo(canvas.width, lastY); // Bis zum Ende zeichnen
+                ctx.stroke();
+            });
+        }
+
+        // --- Export Funktionen ---
+        function serializeState() {
+            let state = {
+                nodes: nodes.map(n => {
+                    let nData = { id: n.id, type: n.type, x: n.x, y: n.y, label: n.label };
+                    if (n.type === 'junction') {
+                        nData.orientation = n.orientation;
+                        nData.inCount = n.inPorts.length;
+                        nData.outCount = n.outPorts.length;
+                    } else if (n instanceof GateNode) {
+                        nData.inCount = n.inPorts.length;
+                    } else if (n instanceof MonoflopNode) {
+                        nData.duration = n.duration;
+                    } else if (n instanceof InputNode) {
+                        nData.isPressed = n.isPressed;
+                    }
+                    return nData;
+                }),
+                wires: wires.map(w => ({
+                    fromNode: w.fromPort.node.id,
+                    fromType: w.fromPort.type,
+                    fromIndex: w.fromPort.index,
+                    toNode: w.toPort.node.id,
+                    toType: w.toPort.type,
+                    toIndex: w.toPort.index,
+                    points: w.points.map(p => ({x: p.x, y: p.y}))
+                })),
+                cameraX: cameraX,
+                cameraY: cameraY,
+                cameraScale: cameraScale,
+                nextNodeId: nextNodeId
+            };
+            return JSON.stringify(state);
+        }
+
+        function loadState(stateObj) {
+            nodes = [];
+            wires = [];
+            nextNodeId = stateObj.nextNodeId || 1;
+            cameraX = stateObj.cameraX || 0;
+            cameraY = stateObj.cameraY || 0;
+            cameraScale = stateObj.cameraScale || 1.0;
+
+            let nodeMap = {};
+
+            // Bauteile wiederherstellen
+            stateObj.nodes.forEach(nData => {
+                let n;
+                if (nData.type === 'junction') {
+                    n = new JunctionNode(nData.x, nData.y, nData.orientation);
+                    for(let i=0; i<nData.inCount; i++) n.inPorts.push(new Port(n, 'in', i, 0));
+                    for(let i=0; i<nData.outCount; i++) n.outPorts.push(new Port(n, 'out', i, 0));
+                } else {
+                    n = createNodeByType(nData.type, nData.x + 40, nData.y + 40); // +40 gleicht den Snap-Offset aus
+                    if (n) {
+                        n.x = nData.x;
+                        n.y = nData.y;
+                        n.label = nData.label || "";
+                        if (n instanceof GateNode && nData.inCount) {
+                            n.setInputs(nData.inCount);
+                        }
+                        if (n instanceof MonoflopNode && nData.duration) {
+                            n.duration = nData.duration;
+                        }
+                        if (n instanceof InputNode && nData.isPressed !== undefined) {
+                            n.isPressed = nData.isPressed;
+                        }
+                    }
+                }
+                if (n) {
+                    n.id = nData.id;
+                    nodes.push(n);
+                    nodeMap[n.id] = n;
+                }
+            });
+
+            // Verkabelung und Pfade wiederherstellen
+            stateObj.wires.forEach(wData => {
+                let fromNode = nodeMap[wData.fromNode];
+                let toNode = nodeMap[wData.toNode];
+                if (fromNode && toNode) {
+                    let fromPort = (wData.fromType === 'in' ? fromNode.inPorts : fromNode.outPorts).find(p => p.index === wData.fromIndex);
+                    let toPort = (wData.toType === 'in' ? toNode.inPorts : toNode.outPorts).find(p => p.index === wData.toIndex);
+                    
+                    if (fromPort && toPort) {
+                        wires.push(new Wire(fromPort, toPort, wData.points));
+                    }
+                }
+            });
+            updateGridBackground();
+        }
+
+		window.showHelpModal = function() {
+					let html = `
+						<div class="help-text" style="max-height: 65vh; overflow-y: auto; padding-right: 15px;">
+							<div style="background-color: #e8f4f8; color: #2980b9; padding: 10px; margin-bottom: 15px; border-radius: 4px; border-left: 4px solid #2980b9;">
+								<b>Wichtig:</b> Das Bearbeiten der Schaltung (Bauteile platzieren, verkabeln, verschieben oder löschen) ist <b>nur im gestoppten Zustand</b> möglich. Beende dazu zuerst die Simulation.
+							</div>
+
+							<h4 style="margin-top: 0; color: #2c3e50;">1. Bauteile & Platzierung</h4>
+							<ul>
+								<li><b>Auswählen:</b> Klicke links auf ein Bauteil (z. B. Schalter, AND-Gatter).</li>
+								<li><b>Platzieren:</b> Klicke auf eine freie Stelle im Raster.</li>
+								<li><b>Eigenschaften anpassen:</b> Ein <b>Doppelklick</b> auf ein Bauteil öffnet die Einstellungen. Hier kannst du Namen vergeben, die Eingänge eines Gatters (2 oder 3) festlegen oder die Dauer eines Monoflops ändern.</li>
+							</ul>
+
+							<h4 style="color: #2c3e50;">2. Verkabelung & Verbindungen</h4>
+							<ul>
+								<li><b>Leitungen ziehen:</b> Klicke auf einen blauen Anschluss (Kreis) und ziehe die Maus zu einem anderen Anschluss.</li>
+								<li><b>Abzweigungen (T-Verbindungen):</b> Wähle "T-Verbindung" aus der Seitenleiste und klicke exakt auf eine bestehende Leitung. Alternativ kannst du eine Leitung direkt auf eine bestehende Leitung ziehen.</li>
+								<li><b>Leitungen anpassen:</b> Klicke und ziehe die geraden Abschnitte einer fertigen Leitung, um sie optisch aufzuräumen.</li>
+							</ul>
+
+							<h4 style="color: #2c3e50;">3. Simulation & Interaktion</h4>
+							<ul>
+								<li><b>Start/Stopp:</b> Klicke oben rechts auf "Simulation Starten". Aktive (HIGH) Leitungen leuchten rot, inaktive (LOW) dunkelblau.</li>
+								<li><b>Bedienung:</b> Im aktiven Simulationsmodus kannst du Taster und Schalter durch einfaches Anklicken betätigen.</li>
+							</ul>
+
+							<h4 style="color: #2c3e50;">4. Analyse-Werkzeuge</h4>
+							<ul>
+								<li><b>Wahrheitstabelle & DNF:</b> Klicke auf "Wahrheitstabelle". Das Tool berechnet automatisch alle Zustände und gibt die Disjunktive Normalform (DNF) aus. <br>
+								<i style="color: #c0392b; font-size: 0.9em;">Hinweis: Die Wahrheitstabelle ist nur für rein statische Logik (z. B. AND, OR, NOT) sinnvoll. Bei zeitabhängigen oder speichernden Bauteilen wie Monoflops oder Flip-Flops führt die Berechnung zu undefinierten Werten.</i></li>
+								<li><b>Impulsdiagramm:</b> Klicke auf "Impulsdiagramm" und dann auf "Aufnahme starten". Bediene nun deine Schaltung. Klicke anschließend auf "Aufnahme stoppen", um ein Zeit-Signal-Diagramm (Timing-Diagramm) zu generieren.</li>
+							</ul>
+
+							<h4 style="color: #2c3e50;">5. Navigation & Löschen</h4>
+							<ul>
+								<li><b>Verschieben (Pannen):</b> Klicke in einen leeren Bereich auf dem Raster und ziehe die Maus, um den sichtbaren Bereich zu verschieben.</li>
+								<li><b>Zoomen:</b> Nutze das Mausrad oder die Zwei-Finger-Geste (Pinch-to-Zoom) auf Touch-Geräten.</li>
+								<li><b>Bauteile/Leitungen löschen:</b> Mache einen <b>Rechtsklick</b> auf das Bauteil oder die Leitung (auf Touch-Geräten: lange gedrückt halten).</li>
+							</ul>
+						</div>
+					`;
+					showModal("📖 Bedienungsanleitung", html, null, true);
+					autoCloseMenu();
+				};
+
+        window.showExportMenu = function() {
+            let html = `
+                <div class="export-btn-group">
+                    <button onclick="exportHTML()">Als HTML exportieren</button>
+                    <button onclick="exportImageCopy()">Als Bild (PNG) in Zwischenablage</button>
+                    <button onclick="exportSVGDownload()">Als Vektorgrafik (SVG) downloaden</button>
+                </div>
+            `;
+            showModal("💾 Schaltung Exportieren", html, null, true);
+            autoCloseMenu();
+        };
+
+        window.exportHTML = function() {
+            closeModal();
+            let stateStr = serializeState();
+            let clone = document.documentElement.cloneNode(true);
+            
+            // Verstecke alle Modals im Export
+            clone.querySelectorAll('.modal-overlay').forEach(el => el.style.display = 'none');
+            let recBtn = clone.querySelector('#floating-rec-btn');
+            if(recBtn) recBtn.style.display = 'none';
+
+            let oldScript = clone.querySelector('#saved-state');
+            if (oldScript) oldScript.remove();
+            
+            let script = document.createElement('script');
+            script.id = 'saved-state';
+            script.textContent = `window.SAVED_STATE = ${stateStr};`;
+            
+            clone.querySelector('head').appendChild(script);
+            
+            let htmlContent = "<!DOCTYPE html>\n" + clone.outerHTML;
+            let blob = new Blob([htmlContent], {type: "text/html"});
+            let a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = "Logik_Schaltung.html";
+            a.click();
+        };
+
+        function generateSVG() {
+            if (nodes.length === 0 && wires.length === 0) return "";
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            
+            nodes.forEach(n => {
+                let topOffset = n.label ? 25 : 0;
+                minX = Math.min(minX, n.x - (n.pinLength||0));
+                minY = Math.min(minY, n.y - topOffset); 
+                maxX = Math.max(maxX, n.x + n.width + (n.pinLength||0));
+                maxY = Math.max(maxY, n.y + n.height);
+            });
+            wires.forEach(w => w.points.forEach(p => {
+                minX = Math.min(minX, p.x); minY = Math.min(minY, p.y);
+                maxX = Math.max(maxX, p.x); maxY = Math.max(maxY, p.y);
+            }));
+            
+            let pad = 40; minX -= pad; minY -= pad; maxX += pad; maxY += pad;
+            let width = maxX - minX, height = maxY - minY;
+            
+            let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${minX} ${minY} ${width} ${height}" width="${width}" height="${height}">`;
+            svg += `<rect x="${minX}" y="${minY}" width="${width}" height="${height}" fill="transparent" />`;
+            
+            svg += `<style>
+                .wire { stroke: #34495e; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+                .node-rect { fill: #fff; stroke: #333; stroke-width: 2; }
+                .pin { stroke: #333; stroke-width: 2; fill: none; }
+                .pin-fill { stroke: #333; stroke-width: 2; fill: #fff; }
+                .text { fill: #000; font-family: Arial, sans-serif; }
+                .text-bold { font-weight: bold; }
+            </style>`;
+            
+            function esc(s) { return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+            wires.forEach(w => {
+                let d = `M ${w.points[0].x} ${w.points[0].y} `;
+                for(let i=1; i<w.points.length; i++) d += `L ${w.points[i].x} ${w.points[i].y} `;
+                svg += `<path class="wire" d="${d}" />`;
+            });
+            
+            nodes.forEach(n => {
+                let pLen = n.pinLength || 0;
+                
+                n.inPorts.forEach(p => { 
+                    let endX = n.x;
+                    if (n instanceof MonoflopNode && n.isNegEdge && p.index === 0) endX -= 8;
+                    svg += `<line class="pin" x1="${p.x}" y1="${p.y}" x2="${endX}" y2="${p.y}" />`; 
+                });
+                
+                n.outPorts.forEach(p => { 
+                    let startX = n.x + n.width; 
+                    if (n.hasInverter && p.index === 0) startX += 8;
+                    if ((n.type === 'rs_ff' || n instanceof MonoflopNode) && p.index === 1) startX += 8; 
+                    svg += `<line class="pin" x1="${startX}" y1="${p.y}" x2="${p.x}" y2="${p.y}" />`; 
+                });
+
+                if (n.hasInverter && n.outPorts.length > 0) {
+                    svg += `<circle cx="${n.x + n.width + 4}" cy="${n.outPorts[0].y}" r="4" class="pin-fill" />`;
+                }
+                if (n.type === 'rs_ff' || n instanceof MonoflopNode) {
+                    svg += `<circle cx="${n.x + n.width + 4}" cy="${n.outPorts[1].y}" r="4" class="pin-fill" />`;
+                }
+                if (n instanceof MonoflopNode && n.isNegEdge) {
+                    svg += `<circle cx="${n.x - 4}" cy="${n.inPorts[0].y}" r="4" class="pin-fill" />`;
+                }
+
+                if (n.type === 'junction') {
+                    svg += `<circle cx="${n.x}" cy="${n.y}" r="6" fill="#000" />`;
+                } 
+                else if (n instanceof GateNode) {
+                    svg += `<rect class="node-rect" x="${n.x}" y="${n.y}" width="${n.width}" height="${n.height}" />`;
+                    let sym = (n.type === 'and' || n.type === 'nand') ? '&amp;' : 
+                              (n.type === 'xor' || n.type === 'xnor') ? '=1' : '&#8805;1';
+                    svg += `<text class="text text-bold" x="${n.x + n.width/2}" y="${n.y + n.height/2}" font-size="24" text-anchor="middle" dominant-baseline="central">${sym}</text>`;
+                }
+                else if (n instanceof NotNode) {
+                    svg += `<rect class="node-rect" x="${n.x}" y="${n.y}" width="${n.width}" height="${n.height}" />`;
+                    svg += `<text class="text text-bold" x="${n.x + n.width/2}" y="${n.y + n.height/2}" font-size="24" text-anchor="middle" dominant-baseline="central">1</text>`;
+                }
+                else if (n.type === 'rs_ff') {
+                    svg += `<rect class="node-rect" x="${n.x}" y="${n.y}" width="${n.width}" height="${n.height}" />`;
+                    svg += `<text class="text text-bold" x="${n.x+12}" y="${n.y+20}" font-size="24" text-anchor="start" dominant-baseline="central">S</text>`;
+                    svg += `<text class="text text-bold" x="${n.x+12}" y="${n.y+60}" font-size="24" text-anchor="start" dominant-baseline="central">R</text>`;
+                }
+                else if (n instanceof InputNode) {
+                    let btnColor = (isSimulating && n.isPressed) ? '#555' : '#888';
+                    svg += `<rect class="node-rect" x="${n.x}" y="${n.y}" width="${n.width}" height="${n.height}" />`;
+                    svg += `<circle cx="${n.x + n.width/2}" cy="${n.y + 35}" r="24" fill="#fff" stroke="#333" stroke-width="2" />`;
+                    svg += `<circle cx="${n.x + n.width/2}" cy="${n.y + 35}" r="18" fill="${btnColor}" stroke="#333" stroke-width="2" />`;
+                    let labelText = n.type === 'taster' ? 'Taster' : 'Schalter';
+                    svg += `<text fill="#000" font-family="Arial, sans-serif" font-size="16" x="${n.x + n.width/2}" y="${n.y + 68}" text-anchor="middle" dominant-baseline="central">${labelText}</text>`;
+                }
+                else if (n instanceof OutputNode) {
+                    let bgColor = (isSimulating && n.getStableInput(0)) ? '#f1c40f' : '#fff';
+                    svg += `<rect class="node-rect" x="${n.x}" y="${n.y}" width="${n.width}" height="${n.height}" fill="${bgColor}" />`;
+                    svg += `<text class="text text-bold" x="${n.x + n.width/2}" y="${n.y + n.height/2}" font-size="16" text-anchor="middle" dominant-baseline="central">Output</text>`;
+                }
+                else if (n instanceof MonoflopNode) {
+                    svg += `<rect class="node-rect" x="${n.x}" y="${n.y}" width="${n.width}" height="${n.height}" />`;
+                    
+                    let px, py = n.y + 30;
+                    if (!n.retriggerable) {
+                        svg += `<text class="text text-bold" x="${n.x+30}" y="${n.y+25}" font-size="20" text-anchor="middle" dominant-baseline="central">1</text>`;
+                        px = n.x + 45;
+                    } else {
+                        px = n.x + 27;
+                    }
+
+                    svg += `<polyline class="pin" points="${px},${py} ${px+8},${py} ${px+8},${py-16} ${px+18},${py-16} ${px+18},${py} ${px+26},${py}" />`;
+                    let inY = n.inPorts[0].y;
+                    svg += `<polyline class="pin" points="${n.x},${inY-6} ${n.x+10},${inY} ${n.x},${inY+6}" />`;
+                }
+                
+                if (n.label) {
+                    svg += `<text class="text text-bold" x="${n.x + (n.width||0)/2}" y="${n.y - 8}" font-size="14" text-anchor="middle">${esc(n.label)}</text>`;
+                }
+            });
+            
+            svg += `</svg>`;
+            return svg;
+        }
+
+        window.exportImageCopy = function() {
+            let svgStr = generateSVG();
+            if(!svgStr) return;
+
+            let img = new Image();
+            let svgBlob = new Blob([svgStr], {type: "image/svg+xml;charset=utf-8"});
+            let url = URL.createObjectURL(svgBlob);
+
+            img.onload = function() {
+                let canvas = document.createElement("canvas");
+                let scale = 3; 
+                canvas.width = img.width * scale;
+                canvas.height = img.height * scale;
+                let ctx = canvas.getContext("2d");
+                ctx.scale(scale, scale);
+                ctx.drawImage(img, 0, 0);
+                URL.revokeObjectURL(url);
+
+                canvas.toBlob(function(blob) {
+                    if (!blob) {
+                        showModal("Fehler", "<p>Bild konnte nicht generiert werden.</p>", null, true);
+                        return;
+                    }
+                    try {
+                        const item = new ClipboardItem({ "image/png": blob });
+                        navigator.clipboard.write([item]).then(() => {
+                            showModal("Erfolg", "<p>Die Schaltung wurde als gestochen scharfes <b>PNG-Bild</b> kopiert.<br><br>Du kannst sie nun mit Strg+V überall einfügen (Word, Discord, etc.)!</p>", null, true);
+                        }).catch(err => {
+                            console.error(err);
+                            showModal("Fehler", "<p>Zugriff auf Zwischenablage verweigert.</p>", null, true);
+                        });
+                    } catch (e) {
+                        showModal("Fehler", "<p>Dein Browser unterstützt das direkte Kopieren von Bildern leider nicht.</p>", null, true);
+                    }
+                }, "image/png");
+            };
+            img.src = url;
+        };
+
+        window.exportSVGDownload = function() {
+            let svgStr = generateSVG();
+            if(!svgStr) return;
+            let blob = new Blob([svgStr], {type: "image/svg+xml"});
+            let a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = "Logik_Schaltung.svg";
+            a.click();
+            closeModal();
+        };
+
+        // --- Zooming & Touch Gestures ---
+        function getPinchDistance(touches) {
+            const dx = touches[0].clientX - touches[1].clientX;
+            const dy = touches[0].clientY - touches[1].clientY;
+            return Math.sqrt(dx*dx + dy*dy);
+        }
+
+        function getPinchCenter(touches) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: ((touches[0].clientX + touches[1].clientX) / 2) - rect.left,
+                y: ((touches[0].clientY + touches[1].clientY) / 2) - rect.top
+            };
+        }
+
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const screenX = e.clientX - rect.left;
+            const screenY = e.clientY - rect.top;
+
+            const worldX = (screenX - cameraX) / cameraScale;
+            const worldY = (screenY - cameraY) / cameraScale;
+
+            const zoomSpeed = 0.1;
+            let newScale = cameraScale * (e.deltaY < 0 ? (1 + zoomSpeed) : (1 - zoomSpeed));
+            newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
+
+            cameraX = screenX - (worldX * newScale);
+            cameraY = screenY - (worldY * newScale);
+            cameraScale = newScale;
+
+            updateGridBackground();
+            draw();
+        }, { passive: false });
+
+        // --- Interaktion & Events ---
+        document.querySelectorAll('.component-btn:not(.special-btn)').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.component-btn').forEach(b => b.classList.remove('active'));
+                if (selectedComponentToPlace === e.target.dataset.type) selectedComponentToPlace = null;
+                else { selectedComponentToPlace = e.target.dataset.type; e.target.classList.add('active'); }
+                autoCloseMenu(); 
+            });
+        });
+
+        document.getElementById('sim-btn').addEventListener('click', (e) => {
+            isSimulating = !isSimulating;
+            const btn = e.target;
+            
+            if (isSimulating) {
+                selectedComponentToPlace = null;
+                document.querySelectorAll('.component-btn').forEach(b => b.classList.remove('active'));
+                btn.textContent = "Simulation Stoppen"; btn.classList.add('stop');
+                
+                // Setze globale Tick-Zeit zurück
+                lastTickTime = performance.now();
+
+                nodes.forEach(n => {
+                    if(n.type === 'taster') n.isPressed = false;
+                    n.inPorts.forEach(p => p.state = false);
+                    n.outPorts.forEach(p => p.state = false);
+                    if(n instanceof MonoflopNode) n.active = false;
+                    
+                    // Reset der Delay-Speicher beim Neustart der Simulation
+                    n.currentRawInputs = [];
+                    n.lastStableInputs = [];
+                    n.inputStableSince = simTime;
+                });
+            } else {
+                btn.textContent = "Simulation Starten"; btn.classList.remove('stop');
+            }
+            draw();
+        });
+
+        document.getElementById('clear-btn').addEventListener('click', () => { nodes = []; wires = []; draw(); });
+
+        function processRightClickOrLongPress(worldX, worldY) {
+            if (isSimulating) return;
+
+            draggingNode = null;
+            draggingWireSegment = null;
+            wiringStartPort = null;
+            if (activeTaster) { activeTaster.isPressed = false; activeTaster = null; }
+            
+            if (navigator.vibrate) navigator.vibrate(50);
+
+            let hitNode = getNodeAt(worldX, worldY);
+            if (hitNode) {
+                wires = wires.filter(w => w.fromPort.node !== hitNode && w.toPort.node !== hitNode);
+                nodes = nodes.filter(n => n !== hitNode);
+                draw(); return;
+            }
+            let hitWire = getWireAt(worldX, worldY);
+            if (hitWire) { wires = wires.filter(w => w !== hitWire); draw(); return; }
+        }
+
+        function processDoubleClick(worldX, worldY) {
+            if (isSimulating) return;
+            let hitNode = getNodeAt(worldX, worldY);
+
+            if (!hitNode) return;
+
+            // Junctions ignorieren, alle anderen Bauteile können benannt werden
+            if (hitNode instanceof JunctionNode) return;
+
+            if (hitNode instanceof GateNode) {
+                showModal("Gatter Einstellungen", 
+                    `<div class="modal-input-group"><label>Name:</label><input type="text" id="node-label" value="${hitNode.label}"></div>
+                     <div class="modal-input-group"><label>Anzahl der Eingänge:</label><select id="gate-inputs"><option value="2" ${hitNode.inPorts.length === 2 ? 'selected' : ''}>2 Eingänge</option><option value="3" ${hitNode.inPorts.length === 3 ? 'selected' : ''}>3 Eingänge</option></select></div>`, 
+                    () => {
+                        hitNode.label = document.getElementById('node-label').value;
+                        let num = parseInt(document.getElementById('gate-inputs').value, 10);
+                        if (num === 2 || num === 3) { hitNode.setInputs(num); }
+                        draw();
+                    });
+            } else if (hitNode instanceof MonoflopNode) {
+                showModal("Monoflop Einstellungen", 
+                    `<div class="modal-input-group"><label>Name:</label><input type="text" id="node-label" value="${hitNode.label}"></div>
+                     <div class="modal-input-group"><label>Dauer (in ms):</label><input type="number" id="mf-duration" value="${hitNode.duration}" min="1"></div>`, 
+                    () => {
+                        hitNode.label = document.getElementById('node-label').value;
+                        let time = parseInt(document.getElementById('mf-duration').value, 10);
+                        if (!isNaN(time) && time > 0) hitNode.duration = time;
+                        draw();
+                    });
+            } else {
+                // Für InputNode, OutputNode, RSFlipFlopNode, NotNode
+                showModal("Bezeichnung ändern", 
+                    `<div class="modal-input-group"><label>Name:</label><input type="text" id="node-label" value="${hitNode.label}"></div>`, 
+                    () => { hitNode.label = document.getElementById('node-label').value; draw(); }
+                );
+            }
+        }
+
+        function processPointerDown(clientX, clientY, isRightClick) {
+            autoCloseMenu();
+            const coords = getWorldCoords(clientX, clientY);
+            const x = coords.x, y = coords.y;
+
+            if (isRightClick) { processRightClickOrLongPress(x, y); return; }
+
+            if (isSimulating) {
+                let hitNode = getNodeAt(x, y);
+                if (hitNode && hitNode.type === 'taster') { hitNode.isPressed = true; activeTaster = hitNode; draw(); return; }
+                if (hitNode && hitNode.type === 'schalter') { hitNode.isPressed = !hitNode.isPressed; draw(); return; }
+                
+                isPanning = true; startPanX = clientX; startPanY = clientY; startCamX = cameraX; startCamY = cameraY;
+                canvasContainer.style.cursor = 'grabbing';
+                return;
+            }
+
+            if (selectedComponentToPlace === 'junction') {
+                let sX = snap(x), sY = snap(y);
+                let hitWire = getWireAt(sX, sY);
+                if (hitWire) {
+                    let orientation = 'h';
+                    for (let s of hitWire.getSegments()) {
+                        let minY = Math.min(s.y1, s.y2), maxY = Math.max(s.y1, s.y2);
+                        if (s.x1 === s.x2 && sY >= minY && sY <= maxY && sX === s.x1) { orientation = 'v'; break; }
+                    }
+                    let j = new JunctionNode(sX, sY, orientation);
+                    nodes.push(j); splitWire(hitWire, sX, sY, j);
+                    selectedComponentToPlace = null;
+                    document.querySelectorAll('.component-btn').forEach(b => b.classList.remove('active'));
+                    draw();
+                }
+                return; 
+            }
+
+            if (selectedComponentToPlace) {
+                let newNode = createNodeByType(selectedComponentToPlace, x, y);
+                if (newNode) {
+                    nodes.push(newNode); selectedComponentToPlace = null;
+                    document.querySelectorAll('.component-btn').forEach(b => b.classList.remove('active'));
+                    draw();
+                }
+                return;
+            }
+
+            let port = getPortAt(x, y);
+            if (port) { wiringStartPort = port; return; }
+
+            let dragSeg = getWireDragSegment(x, y);
+            if (dragSeg) { draggingWireSegment = dragSeg; return; }
+
+            let hitNode = getNodeAt(x, y);
+            if (hitNode) { draggingNode = hitNode; return; }
+
+            isPanning = true; startPanX = clientX; startPanY = clientY; startCamX = cameraX; startCamY = cameraY;
+            canvasContainer.style.cursor = 'grabbing';
+        }
+
+        function processPointerMove(clientX, clientY) {
+            if (isPanning) {
+                cameraX = startCamX + (clientX - startPanX); cameraY = startCamY + (clientY - startPanY);
+                updateGridBackground(); draw(); return;
+            }
+
+            const coords = getWorldCoords(clientX, clientY);
+            mouseX = coords.x; mouseY = coords.y;
+
+            if (draggingNode && !isSimulating) {
+                draggingNode.x = snap(mouseX - draggingNode.width / 2);
+                draggingNode.y = snap(mouseY - draggingNode.height / 2);
+                wires.forEach(w => { if (w.fromPort.node === draggingNode || w.toPort.node === draggingNode) w.points = w.calculatePath(w.fromPort, w.toPort); });
+                draw(); return;
+            }
+
+            if (draggingWireSegment && !isSimulating) {
+                let dx = snap(mouseX) - snap(draggingWireSegment.startMouse.x);
+                let dy = snap(mouseY) - snap(draggingWireSegment.startMouse.y);
+                let w = draggingWireSegment.wire, i = draggingWireSegment.index, startPts = draggingWireSegment.startPts;
+                
+                if (draggingWireSegment.type === 'v') {
+                    w.points[i].x = startPts[i].x + dx; w.points[i+1].x = startPts[i+1].x + dx;
+                } else {
+                    w.points[i].y = startPts[i].y + dy; w.points[i+1].y = startPts[i+1].y + dy;
+                }
+                draw(); return;
+            }
+
+            if (!isSimulating && (wiringStartPort || selectedComponentToPlace)) draw();
+        }
+
+        function processPointerUp() {
+            if (isPanning) { isPanning = false; canvasContainer.style.cursor = 'crosshair'; }
+            if (draggingNode) draggingNode = null;
+            if (draggingWireSegment) draggingWireSegment = null;
+            if (isSimulating && activeTaster) { activeTaster.isPressed = false; activeTaster = null; draw(); }
+
+            if (wiringStartPort && !isSimulating) {
+                let endPort = getPortAt(mouseX, mouseY);
+                if (!endPort) {
+                    let hitWire = getWireAt(mouseX, mouseY);
+                    if (hitWire) {
+                        let sX = snap(mouseX), sY = snap(mouseY); let orientation = 'h';
+                        for (let s of hitWire.getSegments()) {
+                            let minY = Math.min(s.y1, s.y2), maxY = Math.max(s.y1, s.y2);
+                            if (s.x1 === s.x2 && sY >= minY && sY <= maxY && sX === s.x1) { orientation = 'v'; break; }
+                        }
+                        let j = new JunctionNode(sX, sY, orientation); nodes.push(j); splitWire(hitWire, sX, sY, j);
+                        let newPort = new Port(j, wiringStartPort.type === 'out' ? 'in' : 'out', j.inPorts.length, 0);
+                        if (wiringStartPort.type === 'out') j.inPorts.push(newPort); else j.outPorts.push(newPort);
+                        endPort = newPort;
+                    }
+                }
+
+                if (endPort && endPort.node !== wiringStartPort.node) {
+                    let from = wiringStartPort, to = endPort;
+                    if (wiringStartPort.type === 'in' && endPort.type === 'out') { from = endPort; to = wiringStartPort; }
+                    else if (wiringStartPort.type === 'in' && endPort.type === 'in' && endPort.node.type === 'junction') { from = wiringStartPort; to = endPort; }
+                    else if (wiringStartPort.type === 'out' && endPort.type === 'out' && endPort.node.type === 'junction') { from = endPort; to = wiringStartPort; }
+
+                    if ((from.type === 'out' || from.node.type === 'junction') && (to.type === 'in' || to.node.type === 'junction')) {
+                        if (to.node.type !== 'junction') wires = wires.filter(w => w.toPort !== to); 
+                        wires.push(new Wire(from, to));
+                    }
+                }
+                wiringStartPort = null; draw();
+            }
+        }
+
+        // --- Maus Events ---
+        canvas.addEventListener('mousedown', e => processPointerDown(e.clientX, e.clientY, e.button === 2));
+        canvas.addEventListener('mousemove', e => processPointerMove(e.clientX, e.clientY));
+        canvas.addEventListener('mouseup', e => processPointerUp());
+        canvas.addEventListener('mouseleave', () => { processPointerUp(); });
+        canvas.addEventListener('contextmenu', e => e.preventDefault());
+        canvas.addEventListener('dblclick', e => {
+            const wCoords = getWorldCoords(e.clientX, e.clientY);
+            processDoubleClick(wCoords.x, wCoords.y);
+        });
+
+        // --- Touch Events ---
+        canvas.addEventListener('touchstart', e => {
+            if (e.touches.length === 2) {
+                initialPinchDistance = getPinchDistance(e.touches);
+                initialPinchScale = cameraScale;
+                pinchCenterScreen = getPinchCenter(e.touches);
+                pinchCenterWorld = {
+                    x: (pinchCenterScreen.x - cameraX) / cameraScale,
+                    y: (pinchCenterScreen.y - cameraY) / cameraScale
+                };
+                isPanning = false; 
+                clearTimeout(longPressTimer);
+                return;
+            }
+            if (e.touches.length > 2) return; 
+
+            e.preventDefault(); 
+            const touch = e.touches[0];
+            touchStartX = touch.clientX; touchStartY = touch.clientY;
+            isLongPress = false;
+
+            if (!isSimulating) {
+                longPressTimer = setTimeout(() => {
+                    isLongPress = true;
+                    const wCoords = getWorldCoords(touchStartX, touchStartY);
+                    processRightClickOrLongPress(wCoords.x, wCoords.y);
+                }, 1000);
+            }
+            processPointerDown(touch.clientX, touch.clientY, false);
+        }, { passive: false });
+
+        canvas.addEventListener('touchmove', e => {
+            e.preventDefault();
+            
+            if (e.touches.length === 2 && initialPinchDistance) {
+                const currentDistance = getPinchDistance(e.touches);
+                const scaleFactor = currentDistance / initialPinchDistance;
+                let newScale = initialPinchScale * scaleFactor;
+                newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
+                
+                const currentCenterScreen = getPinchCenter(e.touches);
+                cameraX = currentCenterScreen.x - (pinchCenterWorld.x * newScale);
+                cameraY = currentCenterScreen.y - (pinchCenterWorld.y * newScale);
+                cameraScale = newScale;
+                updateGridBackground(); draw(); return;
+            }
+            if (e.touches.length > 1) return;
+
+            const touch = e.touches[0];
+            if (Math.abs(touch.clientX - touchStartX) > 10 || Math.abs(touch.clientY - touchStartY) > 10) { clearTimeout(longPressTimer); }
+            if (!isLongPress) processPointerMove(touch.clientX, touch.clientY);
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', e => {
+            e.preventDefault();
+            if (e.touches.length > 0) {
+                initialPinchDistance = null;
+                const touch = e.touches[0];
+                startPanX = touch.clientX; startPanY = touch.clientY;
+                startCamX = cameraX; startCamY = cameraY;
+                return;
+            }
+
+            initialPinchDistance = null;
+            clearTimeout(longPressTimer);
+            
+            const currentTime = new Date().getTime();
+            const tapLength = currentTime - lastTapTime;
+            if (tapLength < 300 && tapLength > 0 && !isLongPress) {
+                const wCoords = getWorldCoords(touchStartX, touchStartY);
+                processDoubleClick(wCoords.x, wCoords.y);
+            }
+            lastTapTime = currentTime;
+
+            if (!isLongPress) processPointerUp();
+        }, { passive: false });
+
+        canvas.addEventListener('touchcancel', () => {
+            initialPinchDistance = null; clearTimeout(longPressTimer); processPointerUp();
+        });
+
+        // --- Render Loop mit Virtual Time Sub-Steps ---
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.save();
+            ctx.translate(cameraX, cameraY);
+            ctx.scale(cameraScale, cameraScale);
+
+            if (selectedComponentToPlace && !isSimulating && selectedComponentToPlace !== 'junction') {
+                ctx.globalAlpha = 0.5;
+                let tempNode = createNodeByType(selectedComponentToPlace, snap(mouseX), snap(mouseY));
+                if (tempNode) tempNode.draw(ctx);
+                ctx.globalAlpha = 1.0;
+            }
+
+            if (selectedComponentToPlace === 'junction' && !isSimulating) {
+                let sX = snap(mouseX), sY = snap(mouseY);
+                if (getWireAt(sX, sY)) {
+                    ctx.beginPath(); ctx.arc(sX, sY, 6, 0, Math.PI*2);
+                    ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fill();
+                }
+            }
+
+            wires.forEach(w => w.draw(ctx));
+            
+            if (wiringStartPort && !isSimulating) {
+                ctx.strokeStyle = '#aaa'; ctx.setLineDash([5, 5]); ctx.lineWidth = 2;
+                let dummyNode = {type: 'dummy', x: snap(mouseX), y: snap(mouseY)};
+                let dummyPort = {x: snap(mouseX), y: snap(mouseY), node: dummyNode, type: 'in'}; 
+                let fromP = wiringStartPort; let toP = dummyPort;
+                if (wiringStartPort.type === 'in' && wiringStartPort.node.type !== 'junction') { fromP = dummyPort; toP = wiringStartPort; }
+                
+                let dummyWire = new Wire(fromP, toP); ctx.beginPath();
+                if (dummyWire.points.length > 0) {
+                    ctx.moveTo(dummyWire.points[0].x, dummyWire.points[0].y);
+                    dummyWire.points.forEach(p => ctx.lineTo(p.x, p.y));
+                }
+                ctx.stroke(); ctx.setLineDash([]);
+            }
+
+            nodes.forEach(n => n.draw(ctx));
+            ctx.restore(); 
+        }
+
+        function simulationTick() {
+            let now = performance.now();
+            
+            if (isSimulating) {
+                // dt ist die reale vergangene Zeit seit dem letzten Frame in Millisekunden
+                let dt = Math.floor(now - lastTickTime);
+                
+                // Limitiere dt, falls der Browser im Hintergrund war (verhindert gigantische Zeitsprünge)
+                if (dt > 100) { dt = 100; lastTickTime = now - 100; }
+
+                if (dt > 0) {
+                    // "Virtual Time Step Engine": 
+                    // Die Simulation berechnet *jeden* Frame in exakten 1ms-Schritten intern nach.
+                    // So können Laufzeiten, die kürzer sind als die Framerate (z.B. 5ms vs 16.6ms) 
+                    // fehlerfrei verarbeitet werden und "überholen" sich nicht mehr.
+                    for(let step = 0; step < dt; step++) {
+                        simTime++;
+                        nodes.forEach(n => n.processDelayAndUpdateLogic(simTime));
+                        wires.forEach(w => w.updateLogic());
+                    }
+                    
+                    lastTickTime += dt; // Behält evtl. Nachkommastellen für den nächsten Frame
+
+                    draw();
+
+                    // Daten für Impulsdiagramm aufzeichnen
+                    if (isRecording) {
+                        let t = simTime - recordStartTime;
+                        recordedSignals.forEach(sig => {
+                            let currState = sig.port.state;
+                            let lastState = sig.data[sig.data.length - 1].state;
+                            if (currState !== lastState) {
+                                sig.data.push({ t: t, state: currState });
+                            }
+                        });
+                    }
+                }
+            } else {
+                lastTickTime = now;
+            }
+            requestAnimationFrame(simulationTick);
+        }
+
+        // --- Status laden, falls in der HTML-Datei eingebettet ---
+        if (typeof window.SAVED_STATE !== 'undefined') {
+            try {
+                loadState(window.SAVED_STATE);
+            } catch (e) {
+                console.error("Fehler beim Laden des Schaltungs-Status:", e);
+            }
+        }
+
+        resizeCanvas();
+        simulationTick();
+
+    </script>
+</body>
+</html>

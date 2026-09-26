@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arduino Lernplattform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+        
+        .tab-content { 
+            display: none; 
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+        
+        .tab-content.active { 
+            display: block; 
+            opacity: 1;
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+        
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: translateY(10px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+        
+        /* Interactive Code Block */
+        .code-line { cursor: pointer; transition: background-color 0.2s; padding: 2px 5px; border-radius: 4px; }
+        .code-line:hover { background-color: #e2e8f0; }
+        .code-line.active { background-color: #bae6fd; font-weight: bold; border-left: 4px solid #0284c7; }
+        .explanation-box { display: none; margin-top: 10px; padding: 15px; background-color: #f1f5f9; border-radius: 8px; border: 1px solid #cbd5e1; }
+        .explanation-box.active { display: block; animation: slideIn 0.3s ease-out; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+
+        /* Quiz Styles */
+        .quiz-option { cursor: pointer; transition: all 0.2s; }
+        .quiz-option:hover { transform: scale(1.02); }
+        .quiz-option.selected { border-color: #3b82f6; background-color: #eff6ff; }
+        .quiz-option.correct { border-color: #22c55e; background-color: #f0fdf4; color: #166534; }
+        .quiz-option.incorrect { border-color: #ef4444; background-color: #fef2f2; color: #991b1b; }
+        
+        .nav-button { transition: all 0.3s; }
+        .nav-button:hover { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+        .nav-button.active { border-bottom: 3px solid #0ea5e9; color: #0ea5e9; font-weight: 600; }
+        
+        /* Project Transition Styles */
+        .project-view { display: none; opacity: 0; }
+        .project-view.active { display: block; opacity: 1; animation: fadeIn 0.4s ease-out forwards; }
+        
+        /* IDE Modal Styles */
+        .ide-modal-bg { background-color: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px); transition: opacity 0.3s ease; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex flex-col">
+
+    <!-- Navigation -->
+    <nav class="bg-white shadow-md sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <i class="fa-solid fa-microchip text-sky-600 text-3xl mr-3"></i>
+                    <span class="font-bold text-xl text-slate-800">Arduino Academy</span>
+                </div>
+                <div class="flex items-center space-x-4 overflow-x-auto">
+                    <button onclick="switchTab('basics')" id="btn-basics" class="nav-button active px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:text-sky-600">
+                        1. Basics
+                    </button>
+                    <button onclick="switchTab('software')" id="btn-software" class="nav-button px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:text-sky-600">
+                        2. Software
+                    </button>
+                    <button onclick="switchTab('hardware')" id="btn-hardware" class="nav-button px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:text-sky-600">
+                        3. Hardware
+                    </button>
+                    <button onclick="switchTab('projects')" id="btn-projects" class="nav-button px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:text-sky-600">
+                        4. Beispiel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- TAB 1: Arduino Basics -->
+        <div id="tab-basics" class="tab-content active space-y-12">
+            <header class="text-center mb-10">
+                <h1 class="text-4xl font-extrabold text-slate-900 mb-4">Was ist Arduino?</h1>
+                <p class="text-xl text-slate-600 max-w-3xl mx-auto">Der perfekte Einstieg in die Welt der Mikrocontroller, Elektronik und Programmierung.</p>
+            </header>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
+                    <h2 class="text-2xl font-bold text-slate-800 mb-4 flex items-center"><i class="fa-solid fa-circle-question text-sky-500 mr-3"></i> Die Plattform</h2>
+                    <p class="text-slate-700 leading-relaxed mb-4">
+                        Arduino ist eine Open-Source-Elektronikplattform, die auf einfach zu bedienender Hard- und Software basiert. Arduino-Boards können Eingaben (Inputs) lesen – z. B. Licht auf einem Sensor oder einen Finger auf einem Knopf – und diese in Ausgaben (Outputs) umwandeln – z. B. einen Motor aktivieren oder eine LED einschalten.
+                    </p>
+                    <p class="text-slate-700 leading-relaxed">
+                        Man sagt dem Board, was es tun soll, indem man Befehle an den Mikrocontroller sendet. Dazu nutzt man die Arduino-Programmiersprache und die Arduino Software (IDE).
+                    </p>
+                </div>
+
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
+                    <h2 class="text-2xl font-bold text-slate-800 mb-4 flex items-center"><i class="fa-solid fa-lightbulb text-amber-500 mr-3"></i> Warum Arduino?</h2>
+                    <ul class="space-y-3 text-slate-700">
+                        <li class="flex items-start">
+                            <i class="fa-solid fa-check text-green-500 mt-1 mr-2"></i>
+                            <span><strong>Kostengünstig:</strong> Arduino-Boards sind im Vergleich zu anderen Plattformen sehr erschwinglich.</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fa-solid fa-check text-green-500 mt-1 mr-2"></i>
+                            <span><strong>Plattformübergreifend:</strong> Die Arduino Software läuft auf Windows, Mac OS und Linux.</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fa-solid fa-check text-green-500 mt-1 mr-2"></i>
+                            <span><strong>Einfache Programmierung:</strong> Leicht für Anfänger, aber flexibel genug für Fortgeschrittene.</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fa-solid fa-check text-green-500 mt-1 mr-2"></i>
+                            <span><strong>Open Source:</strong> Hard- und Software sind erweiterbar und die Community ist riesig.</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <section class="bg-slate-800 text-white p-8 rounded-3xl mt-12 overflow-hidden relative">
+                <div class="text-center mb-8 relative z-10">
+                    <h2 class="text-3xl font-bold mb-2">Anatomie eines Arduino Boards</h2>
+                    <p class="text-slate-300">Eine Übersicht der wichtigsten Komponenten auf dem Board.</p>
+                </div>
+                
+                <div class="relative max-w-3xl mx-auto bg-white rounded-xl p-6 shadow-2xl border border-slate-600 flex justify-center items-center">
+                    <img src="pictures/uno_r3.png" alt="Arduino Board Anatomie" class="max-w-full h-auto object-contain rounded" onerror="this.onerror=null; this.src='https://placehold.co/800x600/0ea5e9/ffffff?text=Arduino+Board+Image+Missing';">
+                </div>
+
+                <div class="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10">
+                    <div class="bg-slate-700/50 p-5 rounded-xl border border-slate-600">
+                        <h3 class="text-lg font-bold text-sky-400 mb-2">1. Mikrocontroller</h3>
+                        <p class="text-sm text-slate-300">Das Gehirn des Arduino. Hier werden Programme geladen und ausgeführt. Denk an ihn als einen winzigen Computer für spezielle Aufgaben.</p>
+                    </div>
+                    <div class="bg-slate-700/50 p-5 rounded-xl border border-slate-600">
+                        <h3 class="text-lg font-bold text-sky-400 mb-2">2. USB Port & Chip</h3>
+                        <p class="text-sm text-slate-300">Verbindet das Board mit dem PC. Der USB-zu-Seriell-Chip übersetzt Daten, damit der PC den Mikrocontroller programmieren kann.</p>
+                    </div>
+                    <div class="bg-slate-700/50 p-5 rounded-xl border border-slate-600">
+                        <h3 class="text-lg font-bold text-sky-400 mb-2">3. Digitale Pins</h3>
+                        <p class="text-sm text-slate-300">Pins, die digitale Logik (0 oder 1, LOW oder HIGH) verwenden. Häufig genutzt für Schalter oder um LEDs ein-/auszuschalten.</p>
+                    </div>
+                    <div class="bg-slate-700/50 p-5 rounded-xl border border-slate-600">
+                        <h3 class="text-lg font-bold text-sky-400 mb-2">4. Analoge Pins</h3>
+                        <p class="text-sm text-slate-300">Diese Pins können analoge Werte lesen (z.B. von Temperatursensoren oder Drehwiderständen) mit einer Auflösung von 0-1023.</p>
+                    </div>
+                    <div class="bg-slate-700/50 p-5 rounded-xl border border-slate-600">
+                        <h3 class="text-lg font-bold text-sky-400 mb-2">5. Power Pins (5V/3.3V)</h3>
+                        <p class="text-sm text-slate-300">Diese Pins werden verwendet, um externe Komponenten wie Sensoren oder kleine Motoren mit Strom zu versorgen.</p>
+                    </div>
+                    <div class="bg-slate-700/50 p-5 rounded-xl border border-slate-600">
+                        <h3 class="text-lg font-bold text-sky-400 mb-2">6. GND (Ground)</h3>
+                        <p class="text-sm text-slate-300">Auch bekannt als Masse oder Minus-Pol. Wird benötigt, um einen Stromkreis zu schließen (Spannungslevel 0 Volt).</p>
+                    </div>
+                </div>
+            </section>
+
+             <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
+                <h2 class="text-2xl font-bold text-slate-800 mb-4 flex items-center"><i class="fa-solid fa-rotate text-teal-500 mr-3"></i> Grundlegende Arbeitsweise</h2>
+                <p class="text-slate-700 leading-relaxed mb-4">
+                    Die meisten Arduino-Boards sind so konzipiert, dass ein einziges Programm auf dem Mikrocontroller läuft. Sobald das Board Strom hat, beginnt die Ausführung.
+                </p>
+                <p class="text-slate-700 leading-relaxed mb-4">
+                    Jedes Programm hat eine Kernfunktion namens <strong>"loop"</strong> (Schleife). Innerhalb dieser Schleife kann das Programm rasend schnell immer wieder:
+                </p>
+                <ul class="list-disc pl-6 space-y-2 text-slate-700 mb-4">
+                    <li>Einen Sensor auslesen.</li>
+                    <li>Ein Licht einschalten.</li>
+                    <li>Prüfen, ob eine bestimmte Bedingung erfüllt ist (z.B. "Ist der Knopf gedrückt?").</li>
+                </ul>
+                <p class="text-slate-700 leading-relaxed">
+                    Die Geschwindigkeit ist unglaublich hoch (oft im Mikrosekundenbereich), es sei denn, wir sagen dem Programm absichtlich, es soll warten.
+                </p>
+            </div>
+
+            <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 mt-12">
+                <h3 class="text-2xl font-bold text-slate-800 mb-6 flex items-center"><i class="fa-solid fa-clipboard-question text-indigo-500 mr-3"></i> Wissenstest: Basics</h3>
+                <div class="space-y-10" id="quiz-basics">
+                    <!-- Question 1 -->
+                    <div class="quiz-question" data-correct="2">
+                        <p class="font-semibold text-slate-700 mb-3">1. Welche Komponente wird als das "Gehirn" des Arduino bezeichnet, auf das Programme geladen werden?</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div class="quiz-option border p-3 rounded-lg" onclick="checkAnswer(this, 1)">Der USB-zu-Seriell Chip</div>
+                            <div class="quiz-option border p-3 rounded-lg" onclick="checkAnswer(this, 2)">Der Mikrocontroller</div>
+                            <div class="quiz-option border p-3 rounded-lg" onclick="checkAnswer(this, 3)">Die analogen Pins</div>
+                            <div class="quiz-option border p-3 rounded-lg" onclick="checkAnswer(this, 4)">Der GND (Ground) Pin</div>
+                        </div>
+                        <div class="quiz-feedback hidden mt-4 p-4 rounded-lg font-medium"></div>
+                    </div>
+
+                    <!-- Question 2 -->
+                    <div class="quiz-question" data-correct="1">
+                        <p class="font-semibold text-slate-700 mb-3">2. Was ist ein typisches Beispiel für einen Aktor (Output)?</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div class="quiz-option border p-3 rounded-lg" onclick="checkAnswer(this, 1)">Eine LED (Licht)</div>
+                            <div class="quiz-option border p-3 rounded-lg" onclick="checkAnswer(this, 2)">Ein Temperatursensor</div>
+                            <div class="quiz-option border p-3 rounded-lg" onclick="checkAnswer(this, 3)">Ein Druckschalter</div>
+                            <div class="quiz-option border p-3 rounded-lg" onclick="checkAnswer(this, 4)">Ein Lichtsensor</div>
+                        </div>
+                        <div class="quiz-feedback hidden mt-4 p-4 rounded-lg font-medium"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: Software -->
+        <div id="tab-software" class="tab-content space-y-12">
+            <header class="text-center mb-10">
+                <h1 class="text-4xl font-extrabold text-slate-900 mb-4">Arduino Software (IDE) & Sketches</h1>
+                <p class="text-xl text-slate-600 max-w-3xl mx-auto">Wie sagst du dem Board, was es tun soll? Lerne die Werkzeuge und die Sprache kennen.</p>
+            </header>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Software IDE Card -->
+                <div class="bg-gradient-to-br from-cyan-50 to-blue-50 p-8 rounded-3xl shadow-sm border border-blue-100 flex flex-col h-full transform transition hover:-translate-y-1 hover:shadow-md">
+                    <div class="flex-grow">
+                        <div class="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center mb-6 shadow-inner">
+                            <i class="fa-solid fa-code text-white text-2xl"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-slate-800 mb-3">Die Arduino IDE</h2>
+                        <p class="text-slate-600 mb-6">
+                            Die <em>Integrated Development Environment</em> (Entwicklungsumgebung) ist das Programm auf deinem Computer, mit dem du den Code (genannt "Sketch") schreibst und per USB auf das Arduino-Board hochlädst.
+                        </p>
+                    </div>
+                    <a href="https://docs.arduino.cc/learn/starting-guide/the-arduino-software-ide/" target="_blank" rel="noopener noreferrer" class="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition shadow-sm flex justify-center items-center">
+                        Details zur IDE lesen <i class="fa-solid fa-arrow-right ml-2"></i>
+                    </a>
+                </div>
+
+                <!-- Language Reference Card -->
+                <div class="bg-gradient-to-br from-emerald-50 to-teal-50 p-8 rounded-3xl shadow-sm border border-teal-100 flex flex-col h-full transform transition hover:-translate-y-1 hover:shadow-md">
+                    <div class="flex-grow">
+                        <div class="w-16 h-16 bg-teal-500 rounded-full flex items-center justify-center mb-6 shadow-inner">
+                            <i class="fa-solid fa-book text-white text-2xl"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-slate-800 mb-3">Sprachreferenz</h2>
+                        <p class="text-slate-600 mb-6">
+                            Die Arduino-Programmiersprache basiert auf C/C++. Hier findest du das Lexikon aller Befehle, Funktionen (wie <code>digitalWrite()</code>), Variablen und Strukturen.
+                        </p>
+                    </div>
+                    <a href="https://docs.arduino.cc/language-reference/de/" target="_blank" rel="noopener noreferrer" class="w-full py-3 px-4 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl transition shadow-sm flex justify-center items-center text-center">
+                        Zur offiziellen Referenz <i class="fa-solid fa-external-link-alt ml-2 text-sm"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Neue Sektion: Die Arduino IDE Info Block -->
+            <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 mt-12">
+                <div class="mb-8">
+                    <img src="pictures/IDE.png" alt="Screenshot der Arduino IDE" class="w-full max-w-4xl mx-auto rounded-xl shadow-md border border-slate-300" onerror="this.onerror=null; this.src='https://placehold.co/1200x800/1e293b/ffffff?text=Screenshot+Arduino+IDE';">
+                </div>
+                
+                <h2 class="text-3xl font-bold text-slate-800 mb-6"><i class="fa-solid fa-laptop text-blue-500 mr-3"></i> Die Arduino IDE</h2>
+                <p class="text-slate-700 mb-6 text-lg leading-relaxed">
+                    Die Arduino IDE (Integrated Development Environment) ist die Software, mit der du Code schreibst und auf dein Board lädst. Sie besteht aus vier Hauptbereichen:
+                </p>
+                
+                <ol class="list-decimal pl-6 space-y-4 text-slate-700 mb-8 text-lg">
+                    <li><strong>Toolbar (Werkzeugleiste):</strong> Buttons für häufige Funktionen wie "Überprüfen" (Verify - prüft auf Fehler im Code) und "Hochladen" (Upload - lädt den Code aufs Board).</li>
+                    <li><strong>Text-Editor:</strong> Der große Bereich, in dem du deinen Code (Sketch) schreibst. Dateiendung ist <code>.ino</code>.</li>
+                    <li><strong>Konsolen-Output (unten):</strong> Zeigt Meldungen der IDE an, z.B. ob das Hochladen erfolgreich war oder welche Fehler im Code gefunden wurden.</li>
+                    <li><strong>Einstellungen (unten rechts):</strong> Zeigt das aktuell ausgewählte Board und den Port an (z.B. Arduino Uno an COM3).</li>
+                </ol>
+
+                <h3 class="text-2xl font-bold text-slate-800 mb-4"><i class="fa-solid fa-upload text-green-500 mr-2"></i> Wie lade ich Code hoch?</h3>
+                <ul class="list-disc pl-6 space-y-2 text-slate-700 text-lg bg-slate-50 p-6 rounded-xl border border-slate-100">
+                    <li>Verbinde das Board per USB.</li>
+                    <li>Wähle unter <em>Werkzeuge -&gt; Board</em> das richtige Board aus.</li>
+                    <li>Wähle unter <em>Werkzeuge -&gt; Port</em> den Anschluss aus.</li>
+                    <li>Klicke auf den Pfeil nach rechts (Upload) oben links. <strong class="text-red-500">Nicht das Kabel abziehen, während "Hochladen..." steht!</strong></li>
+                </ul>
+            </div>
+
+            <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 mt-12">
+                <h2 class="text-3xl font-bold text-slate-800 mb-6"><i class="fa-solid fa-laptop-code text-indigo-500 mr-3"></i> Tutorial: Was ist ein Sketch?</h2>
+                <p class="text-slate-700 mb-6 text-lg">Ein Sketch ist der Name, den Arduino für ein Programm verwendet. Es ist die Code-Einheit, die auf das Board geladen und dort ausgeführt wird. Jeder Sketch besteht aus verschiedenen Bausteinen:</p>
+
+                <div class="space-y-8">
+                    <!-- Comments -->
+                    <div class="bg-slate-50 p-6 rounded-xl border border-slate-100">
+                        <h3 class="text-xl font-bold text-slate-800 mb-3">1. Kommentare (Comments)</h3>
+                        <p class="text-slate-700 mb-3">Kommentare werden vom Arduino beim Ausführen ignoriert. Sie sind für Menschen gedacht, die den Code lesen, um zu erklären, was das Programm tut.</p>
+                        <div class="bg-slate-800 p-4 rounded text-slate-300 font-mono text-sm">
+                            <span class="text-slate-500">/*<br>Mehrzeiliger Kommentar.<br>Alles hier dazwischen wird ignoriert.<br>*/</span><br><br>
+                            <span class="text-slate-500">// Einzeiliger Kommentar. Erklärt z.B. eine Variable:</span><br>
+                            <span class="text-blue-300">int</span> ledPin = <span class="text-orange-300">13</span>; <span class="text-slate-500">// LED ist an Pin 13 angeschlossen</span>
+                        </div>
+                    </div>
+
+                    <!-- Variables -->
+                    <div class="bg-slate-50 p-6 rounded-xl border border-slate-100">
+                        <h3 class="text-xl font-bold text-slate-800 mb-3">2. Variablen (Variables)</h3>
+                        <p class="text-slate-700 mb-3">Eine Variable ist ein Speicherort für ein Stück Daten. Sie hat einen Namen, einen Typ und einen Wert. Der Vorteil: Anstatt im Code überall die Zahl "13" zu schreiben, schreibst du <code>ledPin</code>. Ändert sich der Pin, musst du ihn nur einmal am Anfang ändern.</p>
+                        <div class="bg-slate-800 p-4 rounded text-slate-300 font-mono text-sm">
+                            <span class="text-slate-500">// Typ(Ganzzahl) Name = Wert;</span><br>
+                            <span class="text-blue-300">int</span> ledPin = <span class="text-orange-300">13</span>; 
+                        </div>
+                    </div>
+
+                    <!-- Functions -->
+                    <div class="bg-slate-50 p-6 rounded-xl border border-slate-100">
+                        <h3 class="text-xl font-bold text-slate-800 mb-3">3. Funktionen (Functions)</h3>
+                        <p class="text-slate-700 mb-3">Eine Funktion ist ein benannter Code-Block, der etwas Bestimmtes tut. Du kannst Funktionen aufrufen, die bereits existieren.</p>
+                        <ul class="list-disc pl-6 space-y-2 text-slate-700">
+                            <li><code>pinMode(pin, mode)</code>: Konfiguriert einen Pin als Eingang (INPUT) oder Ausgang (OUTPUT).</li>
+                            <li><code>digitalWrite(pin, value)</code>: Gibt einen Wert aus (HIGH = 5V an, LOW = 0V aus).</li>
+                            <li><code>delay(ms)</code>: Pausiert das Programm für die angegebene Zeit in Millisekunden.</li>
+                        </ul>
+                    </div>
+
+                    <!-- Setup & Loop -->
+                    <div class="bg-slate-50 p-6 rounded-xl border border-slate-100">
+                        <h3 class="text-xl font-bold text-slate-800 mb-3">4. setup() und loop()</h3>
+                        <p class="text-slate-700 mb-3">Zwei spezielle Funktionen müssen in <strong>jedem</strong> Sketch vorhanden sein:</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-white p-4 rounded border border-slate-200">
+                                <strong class="text-blue-600 block mb-2">void setup()</strong>
+                                Wird genau einmal beim Start ausgeführt. Ideal, um z.B. Pins als OUTPUT zu definieren.
+                            </div>
+                            <div class="bg-white p-4 rounded border border-slate-200">
+                                <strong class="text-green-600 block mb-2">void loop()</strong>
+                                Das Herzstück. Wird immer und immer wieder in einer Schleife ausgeführt, solange Strom anliegt.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 mt-12">
+                <h3 class="text-2xl font-bold text-slate-800 mb-6 flex items-center"><i class="fa-solid fa-clipboard-question text-indigo-500 mr-3"></i> Wissenstest: Software</h3>
+                <div class="space-y-10" id="quiz-software">
+                    <!-- Question 1 -->
+                    <div class="quiz-question" data-correct="3">
+                        <p class="font-semibold text-slate-700 mb-3">1. Wie nennt man ein Programm, das in der Arduino IDE geschrieben wird?</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div class="quiz-option border p-3 rounded-lg" onclick="checkAnswer(this, 1)">Script</div>
+                            <div class="quiz-option border p-3 rounded-lg" onclick="checkAnswer(this, 2)">App</div>
+                            <div class="quiz-option border p-3 rounded-lg" onclick="checkAnswer(this, 3)">Sketch</div>
+                            <div class="quiz-option border p-3 rounded-lg" onclick="checkAnswer(this, 4)">Document</div>
+                        </div>
+                        <div class="quiz-feedback hidden mt-4 p-4 rounded-lg font-medium"></div>
+                    </div>
+
+                    <!-- Question 2 -->
+                    <div class="quiz-question" data-correct="2">
+                        <p class="font-semibold text-slate-700 mb-3">2. Welche Funktion wird in einem Arduino-Programm genau EINMAL beim Start ausgeführt?</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div class="quiz-option border p-3 rounded-lg" onclick="checkAnswer(this, 1)">void loop()</div>
+                            <div class="quiz-option border p-3 rounded-lg" onclick="checkAnswer(this, 2)">void setup()</div>
+                            <div class="quiz-option border p-3 rounded-lg" onclick="checkAnswer(this, 3)">void start()</div>
+                            <div class="quiz-option border p-3 rounded-lg" onclick="checkAnswer(this, 4)">void initialize()</div>
+                        </div>
+                        <div class="quiz-feedback hidden mt-4 p-4 rounded-lg font-medium"></div>
+                    </div>
+                    
+                    <!-- Question 3 -->
+                    <div class="quiz-question" data-correct="4">
+                        <p class="font-semibold text-slate-700 mb-3">3. Wie markiert man einen einzeiligen Kommentar im Code?</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div class="quiz-option border p-3 rounded-lg" onclick="checkAnswer(this, 1)">/* Kommentar */</div>
+                            <div class="quiz-option border p-3 rounded-lg" onclick="checkAnswer(this, 2)">&lt;!-- Kommentar --&gt;</div>
+                            <div class="quiz-option border p-3 rounded-lg" onclick="checkAnswer(this, 3)"># Kommentar</div>
+                            <div class="quiz-option border p-3 rounded-lg" onclick="checkAnswer(this, 4)">// Kommentar</div>
+                        </div>
+                        <div class="quiz-feedback hidden mt-4 p-4 rounded-lg font-medium"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: Hardware -->
+        <div id="tab-hardware" class="tab-content space-y-12">
+            <header class="text-center mb-10">
+                <h1 class="text-4xl font-extrabold text-slate-900 mb-4">Hardware: Der Arduino UNO R3</h1>
+                <p class="text-xl text-slate-600 max-w-3xl mx-auto">Lerne das populärste Board der Arduino-Familie kennen.</p>
+            </header>
+
+             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Hardware Info Card -->
+                <div class="bg-gradient-to-br from-orange-50 to-red-50 p-8 rounded-3xl shadow-sm border border-orange-100 flex flex-col h-full">
+                    <div class="flex-grow">
+                        <div class="w-16 h-16 bg-orange-500 rounded-full flex items-center justify-center mb-6 shadow-inner">
+                            <i class="fa-solid fa-microchip text-white text-2xl"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-slate-800 mb-6">Ein- und Ausgänge des Arduino UNO</h2>
+                        
+                        <div class="space-y-6">
+                            <!-- Digitale Ein-/Ausgänge -->
+                            <div class="bg-white p-5 rounded-xl border border-orange-200 shadow-sm relative pt-6">
+                                <span class="absolute -top-3 left-4 bg-orange-100 text-orange-900 border border-orange-300 font-bold px-3 py-1 rounded text-sm">Digitale Ein-/Ausgänge</span>
+                                <p class="font-bold text-slate-800 mb-2">Digitale Pins (Pins 0-13)</p>
+                                <ul class="list-disc pl-5 text-sm text-slate-700 space-y-1 mb-3">
+                                    <li>Nutzbar als Eingang (z. B. Taster) oder Ausgang (z. B. LED) – je nach <em>Konfiguration</em></li>
+                                </ul>
+                                <p class="font-semibold text-slate-800 text-sm underline mb-1">Eingang:</p>
+                                <ul class="list-disc pl-5 text-sm text-slate-700 space-y-1 mb-3">
+                                    <li>Ein Low-Pegel wird bis 1,5V und ein High-Pegel ab 3V erkannt.</li>
+                                </ul>
+                                <p class="font-semibold text-slate-800 text-sm underline mb-1">Ausgang:</p>
+                                <ul class="list-disc pl-5 text-sm text-slate-700 space-y-1">
+                                    <li>Können nur zwei Signalpegel einnehmen:<br>
+                                    <span class="font-mono text-center block mt-1">HIGH = 5V / LOW = 0V</span></li>
+                                </ul>
+                            </div>
+
+                            <!-- Analoge Ein-/Ausgänge -->
+                            <div class="bg-white p-5 rounded-xl border border-orange-200 shadow-sm relative pt-6">
+                                <span class="absolute -top-3 left-4 bg-orange-100 text-orange-900 border border-orange-300 font-bold px-3 py-1 rounded text-sm">Analoge Ein-/Ausgänge</span>
+                                <p class="font-bold text-slate-800 mb-2">6 analoge Eingänge (A0–A5)</p>
+                                <ul class="list-disc pl-5 text-sm text-slate-700 space-y-1 mb-4">
+                                    <li>Messen Spannungen zwischen 0 und 5V</li>
+                                    <li>Werte werden durch den ADC in Zahlen von 0 bis 1023 umgewandelt</li>
+                                    <li>Typische Anwendung: Sensoren (Temperatur, Licht)</li>
+                                </ul>
+                                <p class="font-bold text-slate-800 mb-2">PWM-Ausgänge (Pins 3, 5, 6, 9, 10, 11)</p>
+                                <ul class="list-disc pl-5 text-sm text-slate-700 space-y-1">
+                                    <li>Ermöglichen eine „analoge“ Ansteuerung</li>
+                                    <li>Anwendung: LED dimmen, Motoren steuern</li>
+                                </ul>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <!-- Kommunikationsschnittstellen -->
+                                <div class="bg-white p-5 rounded-xl border border-orange-200 shadow-sm relative pt-6">
+                                    <span class="absolute -top-3 left-4 bg-orange-100 text-orange-900 border border-orange-300 font-bold px-3 py-1 rounded text-sm">Kommunikationsschnittstellen</span>
+                                    <p class="font-bold text-slate-800 text-sm">UART (Pins 0 & 1)</p>
+                                    <ul class="list-disc pl-5 text-sm text-slate-700 mb-3"><li>Serielle Kommunikation mit PC</li></ul>
+                                    
+                                    <p class="font-bold text-slate-800 text-sm">I²C (Pins A4 = SDA, A5 = SCL)</p>
+                                    <ul class="list-disc pl-5 text-sm text-slate-700 mb-3"><li>Verbindung mit Sensoren/Displays über zwei Leitungen</li></ul>
+                                    
+                                    <p class="font-bold text-slate-800 text-sm">SPI (Pins 10–13)</p>
+                                    <ul class="list-disc pl-5 text-sm text-slate-700"><li>Schnelle Datenübertragung (z. B. SD-Karten)</li></ul>
+                                </div>
+
+                                <!-- Weitere Anschlüsse -->
+                                <div class="bg-white p-5 rounded-xl border border-orange-200 shadow-sm relative pt-6">
+                                    <span class="absolute -top-3 left-4 bg-orange-100 text-orange-900 border border-orange-300 font-bold px-3 py-1 rounded text-sm">Weitere Anschlüsse</span>
+                                    <p class="font-bold text-slate-800 text-sm">USB-Port</p>
+                                    <ul class="list-disc pl-5 text-sm text-slate-700 mb-3"><li>Programmierung & Stromversorgung</li></ul>
+                                    
+                                    <p class="font-bold text-slate-800 text-sm">Stromanschluss (Power Jack)</p>
+                                    <ul class="list-disc pl-5 text-sm text-slate-700 mb-3"><li>Externe Versorgung möglich (6-20V)</li></ul>
+                                    
+                                    <p class="font-bold text-slate-800 text-sm">Powerpins 3,3V und 5V</p>
+                                    <ul class="list-disc pl-5 text-sm text-slate-700 mb-3"><li>Spannungsversorgung für Bauteile</li></ul>
+                                    
+                                    <p class="font-bold text-slate-800 text-sm">GND-Pins (Masseanschlüsse)</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Platzhalter für Bild Hardware Specs -->
+                            
+                                <img src="pictures/uno_r3_per.png" alt="Spezifikationen Übersicht" class="max-w-full h-auto object-contain rounded" onerror="this.onerror=null; this.src='https://placehold.co/800x400/fb923c/ffffff?text=Hardware+Specs+Image+Placeholder';">
+                            
+                        </div>
+                    </div>
+                    <a href="https://docs.arduino.cc/hardware/uno-rev3/#features" target="_blank" class="mt-8 w-full py-3 px-4 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-xl transition shadow-sm flex justify-center items-center">
+                        Komplette Hardware-Specs <i class="fa-solid fa-external-link-alt ml-2"></i>
+                    </a>
+                </div>
+
+                <!-- PinOut Card -->
+                <div class="bg-gradient-to-br from-purple-50 to-fuchsia-50 p-8 rounded-3xl shadow-sm border border-purple-100 flex flex-col h-full">
+                    <div class="flex-grow">
+                        <div class="w-16 h-16 bg-purple-500 rounded-full flex items-center justify-center mb-6 shadow-inner">
+                            <i class="fa-solid fa-map text-white text-2xl"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-slate-800 mb-3">Board Layout & Pinout</h2>
+                        <p class="text-slate-600 mb-6">
+                            Hier siehst du die genauen Bezeichnungen und Belegungen der einzelnen Komponenten auf dem Arduino UNO R3 im Detail.
+                        </p>
+                        
+                        <img src="pictures/uno_r3_pinout.png" alt="Arduino UNO R3 Schemata und Pinout" class="max-w-full h-auto object-contain rounded" onerror="this.onerror=null; this.src='https://placehold.co/800x600/a855f7/ffffff?text=Pinout+Image+Missing';">
+
+                    </div>
+                    <a href="https://docs.arduino.cc/resources/pinouts/A000066-full-pinout.pdf" target="_blank" class="w-full py-3 px-4 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition shadow-sm flex justify-center items-center">
+                        Pinout PDF ansehen <i class="fa-solid fa-file-pdf ml-2"></i>
+                    </a>
+                </div>
+            </div>
+
+             <!-- Hardware Quiz -->
+            <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 mt-12">
+                <h3 class="text-2xl font-bold text-slate-800 mb-6 flex items-center"><i class="fa-solid fa-clipboard-question text-indigo-500 mr-3"></i> Wissenstest: Hardware</h3>
+                <div class="space-y-10" id="quiz-hardware">
+                    <!-- Question 1 -->
+                    <div class="quiz-question" data-correct="2">
+                        <p class="font-semibold text-slate-700 mb-3">1. Welcher Mikrocontroller-Chip bildet das Herzstück des Standard Arduino UNO R3?</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div class="quiz-option border p-3 rounded-lg" onclick="checkAnswer(this, 1)">ESP32</div>
+                            <div class="quiz-option border p-3 rounded-lg" onclick="checkAnswer(this, 2)">ATmega328P</div>
+                            <div class="quiz-option border p-3 rounded-lg" onclick="checkAnswer(this, 3)">Intel Core i3</div>
+                            <div class="quiz-option border p-3 rounded-lg" onclick="checkAnswer(this, 4)">ARM Cortex-M0</div>
+                        </div>
+                        <div class="quiz-feedback hidden mt-4 p-4 rounded-lg font-medium"></div>
+                    </div>
+
+                    <!-- Question 2 -->
+                    <div class="quiz-question" data-correct="3">
+                        <p class="font-semibold text-slate-700 mb-3">2. Welche Pins können eine "analoge" Ansteuerung (z.B. Dimmen einer LED) simulieren?</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div class="quiz-option border p-3 rounded-lg" onclick="checkAnswer(this, 1)">GND Pins</div>
+                            <div class="quiz-option border p-3 rounded-lg" onclick="checkAnswer(this, 2)">UART Pins (0 & 1)</div>
+                            <div class="quiz-option border p-3 rounded-lg" onclick="checkAnswer(this, 3)">PWM-Ausgänge (3, 5, 6, 9, 10, 11)</div>
+                            <div class="quiz-option border p-3 rounded-lg" onclick="checkAnswer(this, 4)">Analoge Eingänge (A0-A5)</div>
+                        </div>
+                        <div class="quiz-feedback hidden mt-4 p-4 rounded-lg font-medium"></div>
+                    </div>
+
+                    <!-- Question 3 -->
+                    <div class="quiz-question" data-correct="1">
+                        <p class="font-semibold text-slate-700 mb-3">3. Welche Spannung gibt ein digitaler Ausgang aus, wenn er auf den Pegel "HIGH" gesetzt wird?</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div class="quiz-option border p-3 rounded-lg" onclick="checkAnswer(this, 1)">5V</div>
+                            <div class="quiz-option border p-3 rounded-lg" onclick="checkAnswer(this, 2)">3.3V</div>
+                            <div class="quiz-option border p-3 rounded-lg" onclick="checkAnswer(this, 3)">1.5V</div>
+                            <div class="quiz-option border p-3 rounded-lg" onclick="checkAnswer(this, 4)">0V</div>
+                        </div>
+                        <div class="quiz-feedback hidden mt-4 p-4 rounded-lg font-medium"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 4: Beispiel (ehemals Projekte) -->
+        <div id="tab-projects" class="tab-content space-y-12">
+            
+            <!-- Project Detail View: Blink (direkt angezeigt, Listenansicht entfernt) -->
+            <div id="project-blink" class="project-view active space-y-8">
+                
+                <header class="text-center mb-10">
+                    <h1 class="text-4xl font-extrabold text-slate-900 mb-4">Beispiel: Das Blink-Licht</h1>
+                    <p class="text-xl text-slate-600 max-w-3xl mx-auto">Der absolute Klassiker. Lerne, wie du eine LED auf dem Board oder auf dem Steckbrett zum Blinken bringst.</p>
+                </header>
+
+                <div class="bg-white p-8 md:p-12 rounded-3xl shadow-sm border border-slate-200">
+                    <p class="text-lg text-slate-700 mb-10 leading-relaxed text-center max-w-4xl mx-auto">
+                        Dieses Beispiel zeigt das Einfachste, was du mit einem Arduino machen kannst, um eine physische Ausgabe zu sehen: Es lässt die eingebaute LED blinken.
+                    </p>
+
+                    <div class="grid grid-cols-1 xl:grid-cols-2 gap-12">
+                        <!-- Left Column: Hardware & Setup -->
+                        <div class="space-y-8">
+                            <div class="bg-amber-50 p-6 rounded-2xl border border-amber-100">
+                                <h3 class="text-xl font-bold text-slate-800 mb-4 flex items-center"><i class="fa-solid fa-toolbox text-amber-500 mr-2"></i> Was du brauchst</h3>
+                                <ul class="list-disc pl-5 text-slate-700 space-y-2">
+                                    <li>Arduino Board (z.B. UNO)</li>
+                                    <li>Optional: Externe LED</li>
+                                    <li>Optional: 220 Ohm Widerstand</li>
+                                </ul>
+                            </div>
+
+                            <div>
+                                <h3 class="text-xl font-bold text-slate-800 mb-4 border-b border-slate-200 pb-2">Die Schaltung</h3>
+                                <p class="text-slate-700 mb-4">
+                                    Die meisten Boards haben bereits eine eingebaute LED, die an einem digitalen Pin (beim UNO ist es Pin 13) angeschlossen ist. Du musst also theoretisch gar nichts anschließen.
+                                </p>
+                                <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 mb-6">
+                                    <p class="text-slate-800 font-semibold mb-2">Wenn du eine externe LED nutzen willst:</p>
+                                    <p class="text-slate-700 text-sm leading-relaxed">
+                                        Verbinde ein Ende des Widerstands (220 Ohm zur Strombegrenzung) mit einem digitalen Pin (z.B. Pin 8). Verbinde das lange Bein der LED (Anode, Plus) mit dem anderen Ende des Widerstands. Das kurze Bein der LED (Kathode, Minus) verbindest du mit GND (Ground).
+                                    </p>
+                                </div>
+                                
+                                <!-- Bild Schematische Darstellung optimiert -->
+                                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex justify-center items-center bg-slate-50">
+                                    <img src="pictures/led_circuit.png" alt="Schaltung für externe LED am Arduino" class="max-w-full h-auto object-contain rounded" onerror="this.onerror=null; this.src='https://placehold.co/800x600/10b981/ffffff?text=Schaltung+Bild+Missing';">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Interactive Code -->
+                        <div class="flex flex-col h-full">
+                            <h3 class="text-xl font-bold text-slate-800 mb-4 border-b border-slate-200 pb-2">Der Code</h3>
+                            <p class="text-sm text-slate-500 mb-4 bg-blue-50 text-blue-800 p-3 rounded-lg border border-blue-100 flex items-center">
+                                <i class="fa-solid fa-hand-pointer mr-2"></i> Klicke auf die einzelnen Code-Zeilen, um herauszufinden, was sie bewirken.
+                            </p>
+
+                            <div class="bg-slate-900 rounded-xl p-6 font-mono text-sm sm:text-base shadow-inner overflow-x-auto text-slate-300 flex-grow-0 mb-6">
+<pre class="m-0 p-0 leading-relaxed"><code><span class="text-slate-500 block mb-3">/*
+  Blink
+  Schaltet eine externe LED für eine Sekunde ein, dann für 
+  eine Sekunde aus, und so weiter.
+*/</span>
+<div class="code-line py-1" onclick="showExplanation('expl-setup', this)"><span class="text-blue-400">void</span> <span class="text-green-400">setup</span>() {</div>
+<div class="code-line py-1" onclick="showExplanation('expl-pinmode', this)">  <span class="text-orange-400">pinMode</span>(<span class="text-purple-400">8</span>, <span class="text-blue-300">OUTPUT</span>);</div>
+<div class="code-line py-1" onclick="showExplanation('expl-setup-end', this)">}</div>
+
+<div class="code-line py-1 mt-4" onclick="showExplanation('expl-loop', this)"><span class="text-blue-400">void</span> <span class="text-green-400">loop</span>() {</div>
+<div class="code-line py-1" onclick="showExplanation('expl-high', this)">  <span class="text-orange-400">digitalWrite</span>(<span class="text-purple-400">8</span>, <span class="text-blue-300">HIGH</span>);</div>
+<div class="code-line py-1" onclick="showExplanation('expl-delay1', this)">  <span class="text-orange-400">delay</span>(<span class="text-purple-400">1000</span>);</div>
+<div class="code-line py-1" onclick="showExplanation('expl-low', this)">  <span class="text-orange-400">digitalWrite</span>(<span class="text-purple-400">8</span>, <span class="text-blue-300">LOW</span>);</div>
+<div class="code-line py-1" onclick="showExplanation('expl-delay2', this)">  <span class="text-orange-400">delay</span>(<span class="text-purple-400">1000</span>);</div>
+<div class="code-line py-1" onclick="showExplanation('expl-loop-end', this)">}</div></code></pre>
+                            </div>
+
+                            <!-- Explanations Container optimiert -->
+                            <div class="flex-grow min-h-[150px] relative">
+                                <!-- Platzhalter Text wenn nichts ausgewählt ist -->
+                                <div id="expl-placeholder" class="absolute inset-0 flex items-center justify-center text-slate-400 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50">
+                                    Wähle eine Code-Zeile aus...
+                                </div>
+                                
+                                <div id="expl-setup" class="explanation-box relative z-10 shadow-sm">
+                                    <div class="font-mono text-slate-800 bg-white p-2 rounded border border-slate-200 mb-2 inline-block">void setup()</div><br>
+                                    Diese Funktion wird genau einmal aufgerufen, wenn das Board Strom bekommt oder resettet wird. Hier treffen wir Vorbereitungen.
+                                </div>
+                                <div id="expl-pinmode" class="explanation-box relative z-10 shadow-sm">
+                                    <div class="font-mono text-slate-800 bg-white p-2 rounded border border-slate-200 mb-2 inline-block">pinMode(8, OUTPUT);</div><br>
+                                    Konfiguriert den digitalen Pin 8, an dem wir unsere LED angeschlossen haben, als Ausgang (<code>OUTPUT</code>). So weiß der Arduino, dass er hier Strom aussenden soll.
+                                </div>
+                                <div id="expl-setup-end" class="explanation-box relative z-10 shadow-sm">
+                                    <div class="font-mono text-slate-800 bg-white p-2 rounded border border-slate-200 mb-2 inline-block">}</div><br>
+                                    Die geschweifte Klammer schließt den Block der setup()-Funktion ab.
+                                </div>
+                                <div id="expl-loop" class="explanation-box relative z-10 shadow-sm">
+                                    <div class="font-mono text-slate-800 bg-white p-2 rounded border border-slate-200 mb-2 inline-block">void loop()</div><br>
+                                    Dies ist die Hauptschleife. Alles, was in diesen Klammern steht, wird vom Mikrocontroller endlos wiederholt.
+                                </div>
+                                <div id="expl-high" class="explanation-box relative z-10 shadow-sm">
+                                    <div class="font-mono text-slate-800 bg-white p-2 rounded border border-slate-200 mb-2 inline-block">digitalWrite(8, HIGH);</div><br>
+                                    Schaltet den Pin 8 ein, indem er auf HIGH gesetzt wird (liefert 5 Volt). Der Strom fließt, die LED leuchtet auf.
+                                </div>
+                                <div id="expl-delay1" class="explanation-box relative z-10 shadow-sm">
+                                    <div class="font-mono text-slate-800 bg-white p-2 rounded border border-slate-200 mb-2 inline-block">delay(1000);</div><br>
+                                    Pausiert das Programm für 1000 Millisekunden (also genau 1 Sekunde). Während dieser Zeit bleibt die LED an, weil der Zustand nicht geändert wird.
+                                </div>
+                                <div id="expl-low" class="explanation-box relative z-10 shadow-sm">
+                                    <div class="font-mono text-slate-800 bg-white p-2 rounded border border-slate-200 mb-2 inline-block">digitalWrite(8, LOW);</div><br>
+                                    Schaltet den Pin 8 aus, indem er auf LOW gesetzt wird (0 Volt). Der Stromkreis ist unterbrochen, die LED geht aus.
+                                </div>
+                                <div id="expl-delay2" class="explanation-box relative z-10 shadow-sm">
+                                    <div class="font-mono text-slate-800 bg-white p-2 rounded border border-slate-200 mb-2 inline-block">delay(1000);</div><br>
+                                    Pausiert erneut für 1 Sekunde, damit wir sehen können, dass die LED ausgeschaltet ist, bevor die Schleife wieder von vorne beginnt.
+                                </div>
+                                <div id="expl-loop-end" class="explanation-box relative z-10 shadow-sm">
+                                    <div class="font-mono text-slate-800 bg-white p-2 rounded border border-slate-200 mb-2 inline-block">}</div><br>
+                                    Die geschweifte Klammer schließt den loop()-Block ab. Danach springt das Programm sofort wieder zur ersten Zeile in der loop().
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 text-slate-400 py-8 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center text-sm">
+            <div class="mb-4 md:mb-0 text-center md:text-left">
+                <p>© 2026 Arduino Academy. Ein interaktives Lernprojekt für Berufsschüler.</p>
+                <p class="text-slate-500 mt-1"><i class="fa-solid fa-robot mr-1"></i> Teile dieser Seite enthalten KI-generierte Inhalte.</p>
+            </div>
+            <div class="text-center md:text-right">
+                <p>Quellenangabe & offizielle Dokumentation:</p>
+                <a href="https://docs.arduino.cc/" target="_blank" rel="noopener noreferrer" class="text-sky-400 hover:text-sky-300 transition flex items-center justify-center md:justify-end mt-1">
+                    https://docs.arduino.cc/ <i class="fa-solid fa-arrow-up-right-from-square ml-2 text-xs"></i>
+                </a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Tab Navigation Logic
+        function switchTab(tabId) {
+            const allTabs = document.querySelectorAll('.tab-content');
+            const allBtns = document.querySelectorAll('.nav-button');
+            
+            allTabs.forEach(tab => tab.classList.remove('active'));
+            allBtns.forEach(btn => btn.classList.remove('active'));
+
+            const selectedTab = document.getElementById('tab-' + tabId);
+            const selectedBtn = document.getElementById('btn-' + tabId);
+            
+            if (selectedTab && selectedBtn) {
+                selectedTab.classList.add('active');
+                selectedBtn.classList.add('active');
+            }
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Interactive Code Explanations Logic
+        function showExplanation(explId, element) {
+            document.querySelectorAll('.code-line').forEach(el => el.classList.remove('active'));
+            element.classList.add('active');
+
+            document.querySelectorAll('.explanation-box').forEach(el => el.classList.remove('active'));
+            
+            // Verstecke den Platzhalter
+            const placeholder = document.getElementById('expl-placeholder');
+            if(placeholder) placeholder.style.display = 'none';
+            
+            const explElement = document.getElementById(explId);
+            if(explElement) explElement.classList.add('active');
+        }
+
+        // Quiz Logic
+        function checkAnswer(selectedOption, answerNumber) {
+            const questionContainer = selectedOption.closest('.quiz-question');
+            const correctAnswer = parseInt(questionContainer.dataset.correct);
+            const allOptions = questionContainer.querySelectorAll('.quiz-option');
+            const feedbackBox = questionContainer.querySelector('.quiz-feedback'); 
+
+            allOptions.forEach(opt => {
+                opt.style.pointerEvents = 'none';
+                opt.classList.remove('selected', 'correct', 'incorrect');
+            });
+
+            if (answerNumber === correctAnswer) {
+                selectedOption.classList.add('correct');
+                feedbackBox.classList.remove('hidden', 'bg-red-50', 'text-red-700');
+                feedbackBox.classList.add('bg-green-50', 'text-green-700', 'block');
+                feedbackBox.innerHTML = '<i class="fa-solid fa-circle-check mr-2"></i> Richtig!';
+            } else {
+                selectedOption.classList.add('incorrect');
+                allOptions[correctAnswer - 1].classList.add('correct');
+                feedbackBox.classList.remove('hidden', 'bg-green-50', 'text-green-700');
+                feedbackBox.classList.add('bg-red-50', 'text-red-700', 'block');
+                feedbackBox.innerHTML = '<i class="fa-solid fa-circle-xmark mr-2"></i> Leider falsch. Die richtige Antwort ist grün markiert.';
+            }
+        }
+
+        // Modal Logic
+        function openModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if(modal) {
+                modal.classList.remove('hidden');
+                void modal.offsetWidth; 
+                modal.style.opacity = '1';
+                document.body.style.overflow = 'hidden'; 
+            }
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if(modal) {
+                modal.style.opacity = '0';
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                    document.body.style.overflow = '';
+                }, 300);
+            }
+        }
+    </script>
+</body>
+</html>

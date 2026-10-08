@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Klassen Zufalls-Picker (Datenschutzkonform)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease forwards;
+        }
+        
+        .container-transition {
+            transition: max-width 0.3s ease-in-out, padding 0.3s ease-in-out;
+        }
+
+        /* Custom Scrollbar for Attendance Grid */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col font-sans">
+
+    <!-- Custom Modal Overlay -->
+    <div id="custom-modal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl border border-slate-200 animate-fade-in">
+            <p id="modal-message" class="text-lg mb-6 text-center text-slate-700 font-medium"></p>
+            <div id="modal-buttons" class="flex justify-center gap-3">
+                <!-- Dynamische Buttons -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Haupt-Wrapper -->
+    <div class="flex-grow flex items-center justify-center p-4 md:p-8 w-full">
+        
+        <!-- Hauptcontainer mit dynamischer Breite -->
+        <div id="main-container" class="bg-white p-6 sm:p-10 rounded-2xl shadow-xl w-full max-w-xl border border-slate-200 container-transition">
+            
+            <!-- 1. IMPORT BILDSCHIRM -->
+            <div id="import-screen" class="block animate-fade-in">
+                <div class="text-center mb-6">
+                    <span class="inline-block p-3 bg-blue-50 text-blue-600 rounded-2xl mb-3 shadow-sm border border-blue-100">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 0115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                    </span>
+                    <h1 class="text-3xl font-bold text-slate-800">Klasse laden</h1>
+                    <p class="text-sm text-slate-500 mt-1">Lade eine Namensliste (.txt oder .csv) hoch. Keine Daten werden gespeichert!</p>
+                </div>
+
+                <!-- Drag & Drop / File Input Box -->
+                <div id="drop-zone" onclick="document.getElementById('file-input').click()" class="border-2 border-dashed border-blue-300 hover:border-blue-500 bg-blue-50/50 hover:bg-blue-50 rounded-2xl p-8 text-center cursor-pointer transition-all mb-6 group">
+                    <input type="file" id="file-input" accept=".txt,.csv" class="hidden" onchange="handleFileSelect(event)">
+                    <div class="flex flex-col items-center justify-center gap-2">
+                        <svg class="w-12 h-12 text-blue-500 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        <span class="font-bold text-slate-700 text-lg">Klassendatei auswählen</span>
+                        <span class="text-xs text-slate-400">Klick hier oder ziehe eine Datei hinein</span>
+                    </div>
+                </div>
+
+                <!-- Alternative Textarea Toggle -->
+                <div class="border-t border-slate-200 pt-4">
+                    <button onclick="toggleManualInput()" class="text-xs text-slate-500 hover:text-blue-600 font-semibold flex items-center justify-center gap-1 w-full text-center">
+                        <span>Oder Namen manuell / aus Excel einfügen</span>
+                        <svg id="manual-arrow" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    
+                    <div id="manual-input-box" class="hidden mt-4">
+                        <textarea id="manual-names-input" placeholder="Ein Name pro Zeile..." class="w-full h-36 bg-slate-50 border border-slate-300 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 mb-3 resize-y"></textarea>
+                        <button onclick="handleManualSubmit()" class="w-full bg-slate-800 hover:bg-slate-900 text-white py-2.5 rounded-lg font-bold text-sm transition-all active:scale-95 shadow-sm">
+                            Namen übernehmen
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mt-6 p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3 text-xs text-amber-800">
+                    <span class="text-base">🔒</span>
+                    <div>
+                        <strong>Maximale Datenschutz-Sicherheit:</strong> Alle Namen verbleiben ausschließlich im Arbeitsspeicher deines Browsers. Beim Schließen dieser Seite werden alle Daten automatisch unwiderruflich gelöscht.
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. ANWESENHEITS-BILDSCHIRM (ZWISCHENSCHRITT) -->
+            <div id="attendance-screen" class="hidden">
+                <div class="flex items-center justify-between mb-4 border-b border-slate-200 pb-3">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                            <span>📋</span> Anwesenheit prüfen
+                        </h2>
+                        <p id="class-file-title" class="text-xs font-semibold text-slate-500 truncate max-w-[250px]"></p>
+                    </div>
+                    <span id="attendance-count" class="bg-blue-100 text-blue-700 text-xs font-bold px-3 py-1.5 rounded-full">
+                        0 / 0 anwesend
+                    </span>
+                </div>
+
+                <div class="flex gap-2 mb-3">
+                    <button onclick="setAllAttendance(true)" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2 rounded-lg transition-colors border border-slate-200">
+                        ✓ Alle auswählen
+                    </button>
+                    <button onclick="setAllAttendance(false)" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2 rounded-lg transition-colors border border-slate-200">
+                        ✗ Alle abwählen
+                    </button>
+                </div>
+
+                <!-- Liste aller Schüler mit Checkboxen -->
+                <div id="attendance-list" class="max-h-64 overflow-y-auto pr-1 space-y-2 mb-6 custom-scrollbar border border-slate-200 rounded-xl p-3 bg-slate-50/50">
+                    <!-- Wird dynamisch per JS befüllt -->
+                </div>
+
+                <div class="flex gap-3">
+                    <button onclick="showImportScreen()" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-3 rounded-lg font-bold transition-all active:scale-95 text-sm">
+                        Andere Datei
+                    </button>
+                    <button onclick="confirmAttendanceAndProceed()" class="flex-[2] bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-bold transition-all active:scale-95 shadow-md shadow-blue-600/20 flex justify-center items-center gap-2 text-sm">
+                        Weiter zur Auslosung ➔
+                    </button>
+                </div>
+            </div>
+
+            <!-- 3. MODUS-AUSWAHL BILDSCHIRM -->
+            <div id="mode-screen" class="hidden">
+                <h1 class="text-3xl font-bold mb-2 text-center text-blue-600 flex items-center justify-center gap-2">
+                    Was möchtest du tun?
+                </h1>
+                <p id="mode-active-info" class="text-center text-slate-500 mb-6 font-medium text-sm"></p>
+                
+                <div class="flex flex-col gap-4 mb-6">
+                    <button onclick="startPicker()" class="w-full bg-white hover:bg-amber-50 border-2 border-amber-200 hover:border-amber-400 p-5 rounded-xl transition-all active:scale-95 flex items-center gap-4 text-left group">
+                        <span class="text-4xl group-hover:scale-110 transition-transform">🎯</span>
+                        <div>
+                            <div class="text-xl font-bold text-amber-700">Eine Person ziehen</div>
+                            <div class="text-sm font-medium text-amber-600/80">Klassischer Zufallsgenerator (ohne Zurücklegen)</div>
+                        </div>
+                    </button>
+                    
+                    <button onclick="showGroupSetup()" class="w-full bg-white hover:bg-purple-50 border-2 border-purple-200 hover:border-purple-400 p-5 rounded-xl transition-all active:scale-95 flex items-center gap-4 text-left group">
+                        <span class="text-4xl group-hover:scale-110 transition-transform">👥</span>
+                        <div>
+                            <div class="text-xl font-bold text-purple-700">Gruppen auslosen</div>
+                            <div class="text-sm font-medium text-purple-600/80">Zufällige Teams oder Gruppen erstellen</div>
+                        </div>
+                    </button>
+                </div>
+                
+                <div class="flex gap-3">
+                    <button onclick="showAttendanceScreen()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2.5 rounded-lg font-bold text-xs transition-all border border-slate-300">
+                        ✏️ Anwesenheit anpassen
+                    </button>
+                    <button onclick="showImportScreen()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2.5 rounded-lg font-bold text-xs transition-all border border-slate-300">
+                        📂 Neue Datei laden
+                    </button>
+                </div>
+            </div>
+
+            <!-- 4. GRUPPEN-SETUP BILDSCHIRM -->
+            <div id="group-setup-screen" class="hidden">
+                <h1 class="text-2xl font-bold mb-6 text-center text-purple-600 flex items-center justify-center gap-2">
+                    <span class="text-3xl">👥</span> Gruppen einstellen
+                </h1>
+                
+                <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 mb-6">
+                    <label class="block text-sm font-semibold text-slate-700 mb-3">Wie möchtest du aufteilen?</label>
+                    
+                    <div class="flex gap-4 mb-5">
+                        <label class="flex-1 cursor-pointer">
+                            <input type="radio" name="groupMode" value="numGroups" class="peer sr-only" checked>
+                            <div class="p-3 bg-white border-2 border-slate-200 rounded-lg text-center text-sm font-bold text-slate-500 peer-checked:bg-purple-50 peer-checked:border-purple-500 peer-checked:text-purple-700 transition-all hover:bg-slate-50">
+                                Anzahl der Gruppen
+                            </div>
+                        </label>
+                        <label class="flex-1 cursor-pointer">
+                            <input type="radio" name="groupMode" value="groupSize" class="peer sr-only">
+                            <div class="p-3 bg-white border-2 border-slate-200 rounded-lg text-center text-sm font-bold text-slate-500 peer-checked:bg-purple-50 peer-checked:border-purple-500 peer-checked:text-purple-700 transition-all hover:bg-slate-50">
+                                Personen pro Gruppe
+                            </div>
+                        </label>
+                    </div>
+
+                    <label for="group-number" class="block text-sm font-semibold text-slate-700 mb-2">Anzahl:</label>
+                    <input type="number" id="group-number" min="1" value="4" class="w-full bg-white border border-slate-300 rounded-lg p-3 text-slate-800 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 text-center text-2xl font-bold shadow-inner">
+                </div>
+
+                <div class="flex gap-3">
+                    <button onclick="showModeScreen()" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-3 rounded-lg font-bold transition-all active:scale-95 text-sm">
+                        Zurück
+                    </button>
+                    <button onclick="generateGroups()" class="flex-[2] bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg font-bold transition-all active:scale-95 shadow-md shadow-purple-600/20 flex justify-center items-center gap-2 text-sm">
+                        ✨ Auslosen
+                    </button>
+                </div>
+            </div>
+
+            <!-- 5. GRUPPEN-ERGEBNIS BILDSCHIRM -->
+            <div id="group-result-screen" class="hidden flex flex-col h-full max-h-[85vh]">
+                <h1 class="text-3xl font-bold mb-6 text-center text-purple-700 shrink-0 flex items-center justify-center gap-3">
+                    <span>✨</span> Auslosungsergebnis <span>✨</span>
+                </h1>
+                
+                <div id="groups-container" class="flex-grow overflow-y-auto pr-2 pb-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                    <!-- Gruppen werden hier per JS eingefügt -->
+                </div>
+
+                <div class="flex gap-3 mt-6 pt-4 border-t border-slate-200 shrink-0 justify-center">
+                    <button onclick="showModeScreen()" class="w-40 bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-3 rounded-lg font-bold transition-all active:scale-95 text-sm">
+                        Zurück zum Menü
+                    </button>
+                    <button onclick="generateGroups()" class="w-48 bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg font-bold transition-all active:scale-95 shadow-md shadow-purple-600/20 text-sm">
+                        Neu auslosen
+                    </button>
+                </div>
+            </div>
+
+            <!-- 6. PICKER-BILDSCHIRM -->
+            <div id="picker-screen" class="hidden text-center">
+                <h2 id="picker-title" class="text-2xl font-bold text-slate-700 mb-2">Auslosung</h2>
+                <div id="picker-stats" class="text-sm font-semibold text-slate-500 mb-8 bg-slate-100 inline-block px-4 py-2 rounded-full border border-slate-200">Noch 0 Personen im Topf</div>
+                
+                <div id="result-box" class="text-5xl sm:text-7xl font-black text-amber-500 min-h-[160px] flex items-center justify-center break-words my-8 py-6 px-4 bg-amber-50 rounded-2xl border-2 border-amber-200/50 shadow-inner">
+                    ?
+                </div>
+                
+                <button id="draw-btn" onclick="drawName()" class="w-full bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed text-white text-xl py-5 rounded-xl font-bold transition-all active:scale-95 shadow-md shadow-emerald-500/20 flex justify-center items-center gap-2 mb-8">
+                    <span class="text-2xl">🎲</span> Name ziehen!
+                </button>
+                
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <button onclick="resetPot()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-3 rounded-lg font-bold transition-all border border-slate-300 active:scale-95 flex justify-center items-center gap-2 text-sm">
+                        🔄 Topf zurücksetzen
+                    </button>
+                    <button onclick="showModeScreen()" class="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-700 px-4 py-3 rounded-lg font-bold transition-all border border-blue-200 active:scale-95 flex justify-center items-center gap-2 text-sm">
+                        Menü
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // State Management (Ausschließlich im Arbeitsspeicher / RAM)
+        let loadedFileName = "";
+        let allStudents = [];      // Alle aus der Datei geladenen Namen: [{ name: "Max", present: true }]
+        let activeStudents = [];   // Nur die aktuell anwesenden Namen
+        let currentPot = [];       // Noch nicht gezogene Personen beim Einzel-Picker
+        let drawInterval = null;
+
+        // --- Custom Modal System ---
+        function customAlert(message) {
+            const modal = document.getElementById('custom-modal');
+            document.getElementById('modal-message').innerText = message;
+            document.getElementById('modal-buttons').innerHTML = `
+                <button onclick="closeModal()" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-bold text-white transition-colors text-sm">OK</button>
+            `;
+            modal.classList.remove('hidden');
+        }
+
+        function customConfirm(message, onConfirm) {
+            const modal = document.getElementById('custom-modal');
+            document.getElementById('modal-message').innerText = message;
+            document.getElementById('modal-buttons').innerHTML = `
+                <button onclick="closeModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-bold transition-colors text-sm">Abbrechen</button>
+                <button id="confirm-yes-btn" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold transition-colors text-sm">Bestätigen</button>
+            `;
+            document.getElementById('confirm-yes-btn').onclick = () => {
+                closeModal();
+                onConfirm();
+            };
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('custom-modal').classList.add('hidden');
+        }
+
+        function setContainerWidth(isWide) {
+            const container = document.getElementById('main-container');
+            if (isWide) {
+                container.classList.remove('max-w-xl');
+                container.classList.add('max-w-[95vw]', 'xl:max-w-7xl');
+            } else {
+                container.classList.add('max-w-xl');
+                container.classList.remove('max-w-[95vw]', 'xl:max-w-7xl');
+            }
+        }
+
+        function hideAllScreens() {
+            const screens = ['import-screen', 'attendance-screen', 'mode-screen', 'group-setup-screen', 'group-result-screen', 'picker-screen'];
+            screens.forEach(id => {
+                const el = document.getElementById(id);
+                el.classList.replace('flex', 'hidden');
+                el.classList.replace('block', 'hidden');
+            });
+        }
+
+        function animateScreen(id, displayClass = 'block') {
+            const screen = document.getElementById(id);
+            screen.classList.remove('animate-fade-in');
+            void screen.offsetWidth; // Trigger Reflow für Re-Animation
+            screen.classList.add('animate-fade-in');
+            screen.classList.replace('hidden', displayClass);
+        }
+
+        function showImportScreen() {
+            hideAllScreens();
+            setContainerWidth(false);
+            animateScreen('import-screen');
+        }
+
+        // Drag & Drop Setup
+        const dropZone = document.getElementById('drop-zone');
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropZone.classList.add('border-blue-500', 'bg-blue-100/50');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropZone.classList.remove('border-blue-500', 'bg-blue-100/50');
+            }, false);
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files && files.length > 0) {
+                processFile(files[0]);
+            }
+        });
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                processFile(file);
+            }
+            // Reset input value damit dieselbe Datei erneut ausgewählt werden kann
+            event.target.value = '';
+        }
+
+        function processFile(file) {
+            loadedFileName = file.name;
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                const text = e.target.result;
+                parseAndSetNames(text);
+            };
+
+            reader.readAsText(file, 'UTF-8');
+        }
+
+        function toggleManualInput() {
+            const box = document.getElementById('manual-input-box');
+            const arrow = document.getElementById('manual-arrow');
+            box.classList.toggle('hidden');
+            arrow.classList.toggle('rotate-180');
+        }
+
+        function handleManualSubmit() {
+            const rawText = document.getElementById('manual-names-input').value;
+            loadedFileName = "Manuell eingegebene Liste";
+            parseAndSetNames(rawText);
+        }
+
+        function parseAndSetNames(text) {
+            const lines = text.split(/\r?\n/)
+                              .map(line => line.trim())
+                              .filter(line => line.length > 0);
+
+            if (lines.length === 0) {
+                customAlert("Es wurden keine gültigen Namen in der Datei/Eingabe gefunden!");
+                return;
+            }
+
+            allStudents = lines.map(name => ({ name: name, present: true }));
+            showAttendanceScreen();
+        }
+
+        function showAttendanceScreen() {
+            hideAllScreens();
+            setContainerWidth(false);
+            
+            document.getElementById('class-file-title').innerText = loadedFileName;
+            renderAttendanceList();
+            animateScreen('attendance-screen');
+        }
+
+        function renderAttendanceList() {
+            const container = document.getElementById('attendance-list');
+            container.innerHTML = '';
+
+            allStudents.forEach((student, index) => {
+                const row = document.createElement('label');
+                row.className = `flex items-center justify-between p-2.5 rounded-lg border cursor-pointer transition-colors ${
+                    student.present ? 'bg-white border-slate-200 hover:bg-slate-50' : 'bg-slate-100 border-slate-200 text-slate-400 opacity-60'
+                }`;
+
+                row.innerHTML = `
+                    <span class="font-medium text-sm ${student.present ? 'text-slate-800' : 'line-through'}">${student.name}</span>
+                    <input type="checkbox" ${student.present ? 'checked' : ''} onchange="toggleStudentAttendance(${index})" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 cursor-pointer">
+                `;
+
+                container.appendChild(row);
+            });
+
+            updateAttendanceCounter();
+        }
+
+        function toggleStudentAttendance(index) {
+            allStudents[index].present = !allStudents[index].present;
+            renderAttendanceList();
+        }
+
+        function setAllAttendance(status) {
+            allStudents.forEach(s => s.present = status);
+            renderAttendanceList();
+        }
+
+        function updateAttendanceCounter() {
+            const presentCount = allStudents.filter(s => s.present).length;
+            document.getElementById('attendance-count').innerText = `${presentCount} / ${allStudents.length} anwesend`;
+        }
+
+        function confirmAttendanceAndProceed() {
+            activeStudents = allStudents.filter(s => s.present).map(s => s.name);
+
+            if (activeStudents.length === 0) {
+                customAlert("Bitte wähle mindestens eine anwesende Person aus!");
+                return;
+            }
+
+            showModeScreen();
+        }
+
+        function showModeScreen() {
+            hideAllScreens();
+            setContainerWidth(false);
+            document.getElementById('mode-active-info').innerText = `Aktuell ${activeStudents.length} anwesende Personen geladen`;
+            animateScreen('mode-screen');
+        }
+
+        function showGroupSetup() {
+            hideAllScreens();
+            setContainerWidth(false);
+            animateScreen('group-setup-screen');
+        }
+
+        function generateGroups() {
+            const mode = document.querySelector('input[name="groupMode"]:checked').value;
+            const num = parseInt(document.getElementById('group-number').value);
+            
+            if (isNaN(num) || num <= 0) {
+                customAlert("Bitte eine gültige Zahl größer 0 eingeben.");
+                return;
+            }
+
+            let students = [...activeStudents];
+            
+            // Zufälliges Mischen (Fisher-Yates Shuffle)
+            for (let i = students.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [students[i], students[j]] = [students[j], students[i]];
+            }
+            
+            let generatedGroups = [];
+            
+            if (mode === "numGroups") {
+                if (num > students.length) {
+                    customAlert("Es können nicht mehr Gruppen als anwesende Personen erstellt werden.");
+                    return;
+                }
+                for (let i = 0; i < num; i++) generatedGroups.push([]);
+                students.forEach((student, i) => {
+                    generatedGroups[i % num].push(student);
+                });
+            } else {
+                if (num > students.length) {
+                    customAlert("Die Gruppengröße kann nicht größer als die Gesamtzahl der Personen sein.");
+                    return;
+                }
+                for (let i = 0; i < students.length; i += num) {
+                    generatedGroups.push(students.slice(i, i + num));
+                }
+            }
+
+            displayGroupsAnimated(generatedGroups);
+        }
+
+        function displayGroupsAnimated(groups) {
+            hideAllScreens();
+            setContainerWidth(true); 
+            animateScreen('group-result-screen', 'flex');
+            
+            const container = document.getElementById('groups-container');
+            container.innerHTML = '';
+            
+            groups.forEach((group, index) => {
+                const box = document.createElement('div');
+                box.className = 'bg-white border-2 border-purple-100 rounded-xl p-4 shadow-sm h-fit';
+                box.innerHTML = `
+                    <h3 class="text-purple-700 font-bold border-b-2 border-purple-100 pb-2 mb-3 text-center text-lg">Gruppe ${index + 1}</h3>
+                    <ul id="group-list-${index}" class="space-y-2 text-center min-h-[2rem]"></ul>
+                `;
+                container.appendChild(box);
+            });
+
+            let currentStudentIndex = 0;
+            let delay = 180; 
+            let distributionList = [];
+            
+            let maxLen = Math.max(...groups.map(g => g.length));
+            for (let i = 0; i < maxLen; i++) {
+                for (let g = 0; g < groups.length; g++) {
+                    if (groups[g][i]) {
+                        distributionList.push({ name: groups[g][i], targetGroup: g });
+                    }
+                }
+            }
+
+            function animateNext() {
+                if (currentStudentIndex >= distributionList.length) return; 
+                
+                const item = distributionList[currentStudentIndex];
+                const listUl = document.getElementById(`group-list-${item.targetGroup}`);
+                
+                if (listUl) {
+                    const li = document.createElement('li');
+                    li.className = 'bg-slate-50 text-slate-700 rounded-lg p-2 text-sm font-semibold animate-fade-in border border-slate-200 shadow-sm';
+                    li.innerText = item.name;
+                    listUl.appendChild(li);
+                }
+                
+                currentStudentIndex++;
+                setTimeout(animateNext, delay);
+                if(delay > 30) delay *= 0.92; 
+            }
+
+            setTimeout(animateNext, 250);
+        }
+
+        function startPicker() {
+            hideAllScreens();
+            setContainerWidth(false);
+            currentPot = [...activeStudents]; 
+            
+            animateScreen('picker-screen');
+            document.getElementById('picker-title').innerText = loadedFileName || "Zufallsauswahl";
+            resetUI();
+            updateStats();
+        }
+
+        function resetUI() {
+            const resultBox = document.getElementById('result-box');
+            resultBox.innerText = "?";
+            resultBox.classList.remove('text-amber-500', 'drop-shadow-md', 'scale-110');
+            resultBox.classList.add('text-slate-300');
+        }
+
+        function updateStats() {
+            const total = activeStudents.length;
+            const left = currentPot.length;
+            document.getElementById('picker-stats').innerText = `Noch ${left} von ${total} Personen im Topf`;
+            
+            const btn = document.getElementById('draw-btn');
+            if (left === 0) {
+                btn.disabled = true;
+                btn.innerHTML = "Alle wurden gezogen!";
+            } else {
+                btn.disabled = false;
+                btn.innerHTML = `<span class="text-2xl">🎲</span> Name ziehen!`;
+            }
+        }
+
+        function drawName() {
+            if (currentPot.length === 0) return;
+
+            const btn = document.getElementById('draw-btn');
+            const resultBox = document.getElementById('result-box');
+            
+            btn.disabled = true;
+            resultBox.classList.remove('text-amber-500', 'text-slate-300', 'scale-110');
+            resultBox.classList.add('text-slate-800');
+
+            let ticks = 0;
+            const maxTicks = 20; 
+            const speed = 60; 
+
+            drawInterval = setInterval(() => {
+                const randomIndex = Math.floor(Math.random() * currentPot.length);
+                resultBox.innerText = currentPot[randomIndex];
+                ticks++;
+
+                if (ticks >= maxTicks) {
+                    clearInterval(drawInterval);
+                    finishDraw();
+                }
+            }, speed);
+        }
+
+        function finishDraw() {
+            const resultBox = document.getElementById('result-box');
+            
+            const winnerIndex = Math.floor(Math.random() * currentPot.length);
+            const winner = currentPot[winnerIndex];
+            
+            currentPot.splice(winnerIndex, 1);
+
+            resultBox.innerText = winner;
+            resultBox.classList.replace('text-slate-800', 'text-amber-500');
+            
+            resultBox.style.transform = 'scale(1.1)';
+            resultBox.style.transition = 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+            setTimeout(() => {
+                resultBox.style.transform = 'scale(1)';
+            }, 300);
+            
+            updateStats();
+        }
+
+        function resetPot() {
+            customConfirm("Möchtest du den Topf wieder auffüllen? Alle anwesenden Namen können dann wieder drankommen.", () => {
+                currentPot = [...activeStudents];
+                resetUI();
+                updateStats();
+            });
+        }
+    </script>
+</body>
+</html>

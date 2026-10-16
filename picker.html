@@ -47,6 +47,20 @@
         </div>
     </div>
 
+    <!-- Secret Modal (Für Reihenfolge und Gruppenzuweisung) -->
+    <div id="secret-modal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl border border-slate-200 animate-fade-in">
+            <h3 id="secret-title" class="text-lg font-bold text-slate-800 mb-4 text-center">Vorauswahl</h3>
+            <div id="secret-list" class="max-h-64 overflow-y-auto pr-2 space-y-2 mb-6 custom-scrollbar">
+                <!-- Dynamisch generiert -->
+            </div>
+            <div class="flex justify-end gap-3">
+                <button onclick="closeSecretModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-bold text-sm transition-all">Abbrechen</button>
+                <button id="secret-save-btn" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-sm transition-all shadow-md">OK</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Haupt-Wrapper -->
     <div class="flex-grow flex items-center justify-center p-4 md:p-8 w-full">
         
@@ -170,7 +184,8 @@
             </div>
 
             <!-- 4. GRUPPEN-SETUP BILDSCHIRM -->
-            <div id="group-setup-screen" class="hidden">
+            <div id="group-setup-screen" class="hidden relative">
+                <button onclick="openSecretGroupModal()" class="absolute top-0 left-0 w-8 h-8 opacity-0 hover:opacity-100 transition-opacity cursor-pointer text-slate-400 hover:text-slate-700 bg-slate-100/50 hover:bg-slate-200 rounded-full flex items-center justify-center text-xs">⚙️</button>
                 <h1 class="text-2xl font-bold mb-6 text-center text-purple-600 flex items-center justify-center gap-2">
                     <span class="text-3xl">👥</span> Gruppen einstellen
                 </h1>
@@ -201,7 +216,7 @@
                     <button onclick="showModeScreen()" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-3 rounded-lg font-bold transition-all active:scale-95 text-sm">
                         Zurück
                     </button>
-                    <button onclick="generateGroups()" class="flex-[2] bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg font-bold transition-all active:scale-95 shadow-md shadow-purple-600/20 flex justify-center items-center gap-2 text-sm">
+                    <button onclick="prepareGroups()" class="flex-[2] bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg font-bold transition-all active:scale-95 shadow-md shadow-purple-600/20 flex justify-center items-center gap-2 text-sm">
                         ✨ Auslosen
                     </button>
                 </div>
@@ -221,14 +236,15 @@
                     <button onclick="showModeScreen()" class="w-40 bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-3 rounded-lg font-bold transition-all active:scale-95 text-sm">
                         Zurück zum Menü
                     </button>
-                    <button onclick="generateGroups()" class="w-48 bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg font-bold transition-all active:scale-95 shadow-md shadow-purple-600/20 text-sm">
-                        Neu auslosen
+                    <button id="group-start-btn" onclick="startGroupAnimation()" class="w-48 bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg font-bold transition-all active:scale-95 shadow-md shadow-purple-600/20 text-sm">
+                        Start
                     </button>
                 </div>
             </div>
 
             <!-- 6. PICKER-BILDSCHIRM -->
-            <div id="picker-screen" class="hidden text-center">
+            <div id="picker-screen" class="hidden text-center relative">
+                <button onclick="openSecretPickerModal()" class="absolute top-0 left-0 w-8 h-8 opacity-0 hover:opacity-100 transition-opacity cursor-pointer text-slate-400 hover:text-slate-700 bg-slate-100/50 hover:bg-slate-200 rounded-full flex items-center justify-center text-xs">⚙️</button>
                 <h2 id="picker-title" class="text-2xl font-bold text-slate-700 mb-2">Auslosung</h2>
                 <div id="picker-stats" class="text-sm font-semibold text-slate-500 mb-8 bg-slate-100 inline-block px-4 py-2 rounded-full border border-slate-200">Noch 0 Personen im Topf</div>
                 
@@ -260,6 +276,11 @@
         let activeStudents = [];   // Nur die aktuell anwesenden Namen
         let currentPot = [];       // Noch nicht gezogene Personen beim Einzel-Picker
         let drawInterval = null;
+
+        let secretOrderMap = {};
+        let secretGroupMap = {};
+        let drawTurn = 1;
+        let generatedGroupsCache = [];
 
         // --- Custom Modal System ---
         function customAlert(message) {
@@ -467,7 +488,7 @@
             animateScreen('group-setup-screen');
         }
 
-        function generateGroups() {
+        function prepareGroups() {
             const mode = document.querySelector('input[name="groupMode"]:checked').value;
             const num = parseInt(document.getElementById('group-number').value);
             
@@ -484,31 +505,48 @@
                 [students[i], students[j]] = [students[j], students[i]];
             }
             
-            let generatedGroups = [];
-            
-            if (mode === "numGroups") {
-                if (num > students.length) {
-                    customAlert("Es können nicht mehr Gruppen als anwesende Personen erstellt werden.");
-                    return;
-                }
-                for (let i = 0; i < num; i++) generatedGroups.push([]);
-                students.forEach((student, i) => {
-                    generatedGroups[i % num].push(student);
-                });
-            } else {
-                if (num > students.length) {
-                    customAlert("Die Gruppengröße kann nicht größer als die Gesamtzahl der Personen sein.");
-                    return;
-                }
-                for (let i = 0; i < students.length; i += num) {
-                    generatedGroups.push(students.slice(i, i + num));
-                }
+            let numberOfGroups = mode === "numGroups" ? num : Math.ceil(students.length / num);
+            if (mode === "numGroups" && num > students.length) {
+                customAlert("Es können nicht mehr Gruppen als anwesende Personen erstellt werden.");
+                return;
             }
+            if (mode === "groupSize" && num > students.length) {
+                customAlert("Die Gruppengröße kann nicht größer als die Gesamtzahl der Personen sein.");
+                return;
+            }
+            
+            let generatedGroups = Array.from({length: numberOfGroups}, () => []);
+            let groupLetterMap = {};
+            let currentGroupIdx = 0;
+            let unassignedStudents = [];
 
-            displayGroupsAnimated(generatedGroups);
+            // Berücksichtigen der geheimen Gruppenzuordnung
+            students.forEach(student => {
+                const letter = secretGroupMap[student];
+                if (letter) {
+                    if (groupLetterMap[letter] === undefined) {
+                        groupLetterMap[letter] = currentGroupIdx % numberOfGroups;
+                        currentGroupIdx++;
+                    }
+                    generatedGroups[groupLetterMap[letter]].push(student);
+                } else {
+                    unassignedStudents.push(student);
+                }
+            });
+
+            // Restliche Personen gleichmäßig verteilen
+            unassignedStudents.forEach(student => {
+                let minSize = Math.min(...generatedGroups.map(g => g.length));
+                let availableGroups = generatedGroups.map((g, i) => ({size: g.length, index: i})).filter(g => g.size === minSize);
+                let targetGroup = availableGroups[Math.floor(Math.random() * availableGroups.length)].index;
+                generatedGroups[targetGroup].push(student);
+            });
+            
+            generatedGroupsCache = generatedGroups;
+            showGroupResultScreenEmpty();
         }
 
-        function displayGroupsAnimated(groups) {
+        function showGroupResultScreenEmpty() {
             hideAllScreens();
             setContainerWidth(true); 
             animateScreen('group-result-screen', 'flex');
@@ -516,7 +554,7 @@
             const container = document.getElementById('groups-container');
             container.innerHTML = '';
             
-            groups.forEach((group, index) => {
+            generatedGroupsCache.forEach((group, index) => {
                 const box = document.createElement('div');
                 box.className = 'bg-white border-2 border-purple-100 rounded-xl p-4 shadow-sm h-fit';
                 box.innerHTML = `
@@ -525,22 +563,44 @@
                 `;
                 container.appendChild(box);
             });
+            
+            const btn = document.getElementById('group-start-btn');
+            btn.innerText = "Start";
+            btn.disabled = false;
+            btn.onclick = startGroupAnimation;
+        }
+
+        function startGroupAnimation() {
+            const btn = document.getElementById('group-start-btn');
+            if (btn.innerText === "Neu auslosen") {
+                prepareGroups(); 
+                setTimeout(startGroupAnimation, 50); 
+                return; 
+            }
+            
+            btn.innerText = "Auslosen läuft...";
+            btn.disabled = true;
 
             let currentStudentIndex = 0;
             let delay = 180; 
             let distributionList = [];
             
-            let maxLen = Math.max(...groups.map(g => g.length));
+            let maxLen = Math.max(...generatedGroupsCache.map(g => g.length));
             for (let i = 0; i < maxLen; i++) {
-                for (let g = 0; g < groups.length; g++) {
-                    if (groups[g][i]) {
-                        distributionList.push({ name: groups[g][i], targetGroup: g });
+                for (let g = 0; g < generatedGroupsCache.length; g++) {
+                    if (generatedGroupsCache[g][i]) {
+                        distributionList.push({ name: generatedGroupsCache[g][i], targetGroup: g });
                     }
                 }
             }
 
             function animateNext() {
-                if (currentStudentIndex >= distributionList.length) return; 
+                if (currentStudentIndex >= distributionList.length) {
+                    btn.innerText = "Neu auslosen";
+                    btn.disabled = false;
+                    btn.onclick = startGroupAnimation;
+                    return; 
+                }
                 
                 const item = distributionList[currentStudentIndex];
                 const listUl = document.getElementById(`group-list-${item.targetGroup}`);
@@ -564,6 +624,7 @@
             hideAllScreens();
             setContainerWidth(false);
             currentPot = [...activeStudents]; 
+            drawTurn = 1;
             
             animateScreen('picker-screen');
             document.getElementById('picker-title').innerText = loadedFileName || "Zufallsauswahl";
@@ -622,10 +683,28 @@
         function finishDraw() {
             const resultBox = document.getElementById('result-box');
             
-            const winnerIndex = Math.floor(Math.random() * currentPot.length);
-            const winner = currentPot[winnerIndex];
+            let candidates = currentPot.filter(s => {
+                const mapped = secretOrderMap[s];
+                if (mapped === drawTurn) return true;
+                if (mapped === -1 && currentPot.length === 1) return true; // -1 heißt zwingend der/die Letzte
+                if (mapped === undefined) return true; // Zufall
+                return false;
+            });
             
+            const forcedCandidate = candidates.find(s => secretOrderMap[s] === drawTurn);
+            if (forcedCandidate) {
+                candidates = [forcedCandidate];
+            }
+            // Fallback, falls Vorauswahl zu Konflikten führt
+            if (candidates.length === 0) candidates = currentPot;
+
+            const winnerIndexInCandidates = Math.floor(Math.random() * candidates.length);
+            const winner = candidates[winnerIndexInCandidates];
+            
+            const winnerIndex = currentPot.indexOf(winner);
             currentPot.splice(winnerIndex, 1);
+            
+            drawTurn++;
 
             resultBox.innerText = winner;
             resultBox.classList.replace('text-slate-800', 'text-amber-500');
@@ -642,9 +721,74 @@
         function resetPot() {
             customConfirm("Möchtest du den Topf wieder auffüllen? Alle anwesenden Namen können dann wieder drankommen.", () => {
                 currentPot = [...activeStudents];
+                drawTurn = 1;
                 resetUI();
                 updateStats();
             });
+        }
+
+        // --- Geheime Funktionen ---
+
+        function openSecretPickerModal() {
+            const list = document.getElementById('secret-list');
+            list.innerHTML = '';
+            document.getElementById('secret-title').innerText = 'Geheime Reihenfolge (Zahl eintragen)';
+            
+            activeStudents.forEach((student, idx) => {
+                const val = secretOrderMap[student] !== undefined ? secretOrderMap[student] : '';
+                list.innerHTML += `
+                    <div class="flex items-center justify-between p-2 bg-slate-50 border border-slate-200 rounded-lg">
+                        <input type="number" id="sec-ord-${idx}" value="${val}" class="w-16 p-1 border border-slate-300 rounded text-center text-sm mr-3 font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-200" placeholder="-">
+                        <span class="font-medium text-sm flex-grow text-slate-700">${student}</span>
+                    </div>
+                `;
+            });
+            document.getElementById('secret-save-btn').onclick = () => saveSecretPicker();
+            document.getElementById('secret-modal').classList.remove('hidden');
+        }
+
+        function saveSecretPicker() {
+            secretOrderMap = {};
+            activeStudents.forEach((student, idx) => {
+                const val = document.getElementById(`sec-ord-${idx}`).value;
+                if (val !== '') {
+                    secretOrderMap[student] = parseInt(val);
+                }
+            });
+            closeSecretModal();
+        }
+
+        function openSecretGroupModal() {
+            const list = document.getElementById('secret-list');
+            list.innerHTML = '';
+            document.getElementById('secret-title').innerText = 'Geheime Gruppen (Buchstabe eintragen)';
+            
+            activeStudents.forEach((student, idx) => {
+                const val = secretGroupMap[student] || '';
+                list.innerHTML += `
+                    <div class="flex items-center justify-between p-2 bg-slate-50 border border-slate-200 rounded-lg">
+                        <input type="text" id="sec-grp-${idx}" value="${val}" class="w-16 p-1 border border-slate-300 rounded text-center text-sm mr-3 uppercase font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-200" placeholder="-">
+                        <span class="font-medium text-sm flex-grow text-slate-700">${student}</span>
+                    </div>
+                `;
+            });
+            document.getElementById('secret-save-btn').onclick = () => saveSecretGroup();
+            document.getElementById('secret-modal').classList.remove('hidden');
+        }
+
+        function saveSecretGroup() {
+            secretGroupMap = {};
+            activeStudents.forEach((student, idx) => {
+                const val = document.getElementById(`sec-grp-${idx}`).value.trim().toUpperCase();
+                if (val !== '') {
+                    secretGroupMap[student] = val;
+                }
+            });
+            closeSecretModal();
+        }
+
+        function closeSecretModal() {
+            document.getElementById('secret-modal').classList.add('hidden');
         }
     </script>
 </body>

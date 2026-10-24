@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Impressum</title>
+    <style>
+        :root {
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --muted: #64748b;
+            --border: #e2e8f0;
+            --accent: #2563eb;
+            --placeholder-bg: #fef3c7;
+            --placeholder-text: #b45309;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 2rem 1rem;
+        }
+        .container {
+            max-width: 720px;
+            margin: 0 auto;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+        }
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.85rem;
+        }
+        .top-nav a {
+            color: var(--muted);
+            text-decoration: none;
+            transition: color 0.15s;
+        }
+        .top-nav a:hover { color: var(--accent); }
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 1.25rem;
+            color: var(--text);
+        }
+        h2 {
+            font-size: 1.05rem;
+            margin-top: 1.5rem;
+            margin-bottom: 0.4rem;
+            color: var(--text);
+        }
+        p {
+            font-size: 0.92rem;
+            color: var(--muted);
+            margin-bottom: 0.75rem;
+        }
+        .placeholder {
+            background: var(--placeholder-bg);
+            color: var(--placeholder-text);
+            padding: 0.05rem 0.35rem;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.88rem;
+        }
+        .footer-nav {
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+            font-size: 0.8rem;
+            color: var(--muted);
+            display: flex;
+            gap: 1rem;
+        }
+        .footer-nav a {
+            color: var(--muted);
+            text-decoration: underline;
+        }
+        .footer-nav a:hover { color: var(--text); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="top-nav">
+            <a href="javascript:history.back()" onclick="if(history.length<=1){window.close();}">&larr; Zurück zur Seite</a>
+            <a href="datenschutz.html">Zur Datenschutzerklärung &rarr;</a>
+        </div>
+
+        <h1>Impressum</h1>
+
+        <h2>Angaben gemäß § 5 DDG</h2>
+        <p>
+            <span class="placeholder">[Vorname Nachname]</span><br>
+            <span class="placeholder">[Straße und Hausnummer]</span><br>
+            <span class="placeholder">[PLZ und Ort]</span><br>
+            Deutschland
+        </p>
+
+        <h2>Kontakt</h2>
+        <p>
+            E-Mail: <span class="placeholder">[E-Mail-Adresse eintragen]</span><br>
+            Telefon: <span class="placeholder">[Optional: Telefonnummer]</span>
+        </p>
+
+        <h2>Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</h2>
+        <p>
+            <span class="placeholder">[Vorname Nachname]</span><br>
+            <span class="placeholder">[Anschrift wie oben]</span>
+        </p>
+
+        <h2>Hinweis zum Bildungscharakter &amp; Haftungsausschluss</h2>
+        <p>
+            Diese Website stellt kostenfreie, nicht-kommerzielle interaktive Werkzeuge und Simulationen für den handlungsorientierten Unterricht bereit.
+            Die Inhalte und Berechnungen wurden mit größter Sorgfalt erstellt, dienen jedoch ausschließlich zu Schulungs- und Übungszwecken. Für die Richtigkeit, Vollständigkeit und Aktualität der Inhalte wird keine Gewähr übernommen.
+        </p>
+
+        <h2>Urheberrecht</h2>
+        <p>
+            Die durch den Seitenbetreiber erstellten Inhalte, Simulationen und Werke auf diesen Seiten unterliegen dem deutschen Urheberrecht.
+        </p>
+
+        <div class="footer-nav">
+            <span>Impressum</span>
+            <span>&bull;</span>
+            <a href="datenschutz.html">Datenschutzerklärung</a>
+        </div>
+    </div>
+</body>
+</html>

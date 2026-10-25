@@ -3,44 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="robots" content="noindex, nofollow">
+    <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
+    <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet">
     <title>Datenschutzerklärung</title>
     <style>
         :root {
             --bg: #f8fafc;
             --card: #ffffff;
-            --text: #1e293b;
+            --text: #334155;
             --muted: #64748b;
+            --subtle: #94a3b8;
             --border: #e2e8f0;
             --accent: #2563eb;
-            --placeholder-bg: #fef3c7;
-            --placeholder-text: #b45309;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: var(--bg);
             color: var(--text);
-            line-height: 1.6;
+            line-height: 1.55;
             padding: 2rem 1rem;
         }
         .container {
-            max-width: 720px;
+            max-width: 680px;
             margin: 0 auto;
             background: var(--card);
             border: 1px solid var(--border);
             border-radius: 12px;
-            padding: 2rem;
+            padding: 1.75rem;
             box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
         }
         .top-nav {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 1.5rem;
-            padding-bottom: 1rem;
+            margin-bottom: 1.25rem;
+            padding-bottom: 0.85rem;
             border-bottom: 1px solid var(--border);
-            font-size: 0.85rem;
+            font-size: 0.78rem;
         }
         .top-nav a {
             color: var(--muted);
@@ -49,43 +49,48 @@
         }
         .top-nav a:hover { color: var(--accent); }
         h1 {
-            font-size: 1.5rem;
-            margin-bottom: 1.25rem;
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
             color: var(--text);
         }
         h2 {
-            font-size: 1.05rem;
-            margin-top: 1.5rem;
-            margin-bottom: 0.4rem;
+            font-size: 0.88rem;
+            margin-top: 1.25rem;
+            margin-bottom: 0.3rem;
             color: var(--text);
         }
         p, ul {
-            font-size: 0.92rem;
-            color: var(--muted);
-            margin-bottom: 0.75rem;
-        }
-        ul {
-            padding-left: 1.25rem;
-        }
-        li {
-            margin-bottom: 0.35rem;
-        }
-        .placeholder {
-            background: var(--placeholder-bg);
-            color: var(--placeholder-text);
-            padding: 0.05rem 0.35rem;
-            border-radius: 4px;
-            font-family: monospace;
-            font-size: 0.88rem;
-        }
-        .footer-nav {
-            margin-top: 2rem;
-            padding-top: 1rem;
-            border-top: 1px solid var(--border);
             font-size: 0.8rem;
             color: var(--muted);
+            margin-bottom: 0.65rem;
+        }
+        ul {
+            padding-left: 1.15rem;
+        }
+        li {
+            margin-bottom: 0.3rem;
+        }
+        .contact-data {
+            font-size: 0.74rem;
+            line-height: 1.45;
+            color: var(--subtle);
+        }
+        .hp {
+            display: none !important;
+            visibility: hidden !important;
+            font-size: 0 !important;
+            opacity: 0 !important;
+            user-select: none !important;
+            pointer-events: none !important;
+        }
+        .footer-nav {
+            margin-top: 1.75rem;
+            padding-top: 0.85rem;
+            border-top: 1px solid var(--border);
+            font-size: 0.75rem;
+            color: var(--muted);
             display: flex;
-            gap: 1rem;
+            gap: 0.75rem;
         }
         .footer-nav a {
             color: var(--muted);
@@ -98,7 +103,7 @@
     <div class="container">
         <div class="top-nav">
             <a href="javascript:history.back()" onclick="if(history.length<=1){window.close();}">&larr; Zurück zur Seite</a>
-            <a href="impressum.html">Zum Impressum &rarr;</a>
+            <a href="impressum.html" rel="nofollow">Zum Impressum &rarr;</a>
         </div>
 
         <h1>Datenschutzerklärung</h1>
@@ -113,10 +118,8 @@
         </ul>
 
         <h2>2. Verantwortliche Stelle</h2>
-        <p>
-            Verantwortlich für die Datenverarbeitung auf dieser Website ist: Johannes Lutz<br>
-            E-Mail: johannes.lutz96@gmail.com
-        </p>
+        <p>Verantwortlich für die Datenverarbeitung auf dieser Website ist:</p>
+        <p class="contact-data" id="ds-resp"></p>
 
         <h2>3. Hosting über GitHub Pages</h2>
         <p>
@@ -126,9 +129,9 @@
             Beim Aufruf der Seiten erfasst der Webserver von GitHub technisch notwendige Verbindungsdaten in Server-Logfiles (u. a. IP-Adresse, Datum und Uhrzeit des Zugriffs, aufgerufene Datei sowie Browsertyp), um die sichere und stabile Auslieferung der Website zu gewährleisten (Art. 6 Abs. 1 lit. f DSGVO). Weitere Details finden Sie in der Datenschutzerklärung von GitHub unter <code>https://docs.github.com/de/site-policy/privacy-policies/github-general-privacy-statement</code>.
         </p>
 
-        <h2>4. Externe Schriftarten und Stylesheets (CDN)</h2>
+        <h2>4. Externe Schriftarten, Skripte und Stylesheets (CDN)</h2>
         <p>
-            Einzelne Unterseiten nutzen zur einheitlichen Darstellung Stylesheets (Tailwind CSS CDN) sowie Schriftarten (Google Fonts). Beim Laden dieser Ressourcen durch Ihren Browser wird technisch bedingt Ihre IP-Adresse an den jeweiligen Bereitsteller übermittelt. Rechtsgrundlage ist das berechtigte Interesse an einer ansprechenden und funktionalen Darstellung des Online-Angebots (Art. 6 Abs. 1 lit. f DSGVO).
+            Einzelne Unterseiten nutzen zur einheitlichen Darstellung und Funktionalität externe Bibliotheken über Content Delivery Networks (u. a. Tailwind CSS CDN, Cloudflare cdnjs sowie Google Fonts). Beim Laden dieser Ressourcen durch Ihren Browser wird technisch bedingt Ihre IP-Adresse an den jeweiligen Bereitsteller übermittelt. Rechtsgrundlage ist das berechtigte Interesse an einer ansprechenden und funktionalen Darstellung des Online-Angebots (Art. 6 Abs. 1 lit. f DSGVO).
         </p>
 
         <h2>5. Ihre Rechte nach DSGVO</h2>
@@ -137,10 +140,43 @@
         </p>
 
         <div class="footer-nav">
-            <a href="impressum.html">Impressum</a>
+            <a href="impressum.html" rel="nofollow">Impressum</a>
             <span>&bull;</span>
             <span>Datenschutzerklärung</span>
         </div>
     </div>
+
+    <script>
+        (function () {
+            const k = 73;
+            const d = {
+                n: [3,38,33,40,39,39,44,58,105,5,60,61,51],
+                s: [26,61,38,42,34,45,38,59,47,44,59,105,30,44,46,105,123,126],
+                c: [113,123,120,122,120,105,14,40,60,61,32,39,46],
+                l: [13,44,60,61,58,42,33,37,40,39,45],
+                m: [35,38,33,40,39,39,44,58,103,37,60,61,51,112,127,9,46,36,40,32,37,103,42,38,36]
+            };
+
+            function renderObfuscated(arr) {
+                const noise = ['_x9_', '_bot_', '_nospam_', '_z3_'];
+                let html = '';
+                for (let i = 0; i < arr.length; i++) {
+                    html += String.fromCharCode(arr[i] ^ k);
+                    if (i % 3 === 1 && i < arr.length - 1) {
+                        html += '<span class="hp" aria-hidden="true">' + noise[i % noise.length] + '</span>';
+                    }
+                }
+                return html;
+            }
+
+            const respEl = document.getElementById('ds-resp');
+            if (respEl) {
+                respEl.innerHTML =
+                    renderObfuscated(d.n) + '<br>' +
+                    renderObfuscated(d.s) + ', ' + renderObfuscated(d.c) + ', ' + renderObfuscated(d.l) + '<br>' +
+                    'E-Mail: ' + renderObfuscated(d.m);
+            }
+        })();
+    </script>
 </body>
 </html>
